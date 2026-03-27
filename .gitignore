@@ -7,5 +7,5 @@
 *.pdf
 *.synctex.gz
 deliverables/committee_evaluation_sheet.tex
-.venv/*
+venv/*
 requirements.txt
