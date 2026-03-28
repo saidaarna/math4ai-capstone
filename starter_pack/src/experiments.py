@@ -7,6 +7,11 @@ from optimizers import SGD
 from train import train_softmax, train_nn
 from evaluate import evaluate
 from plotting import plot_decision_boundary, plot_training_curves
+import os
+
+def _fig_path(filename):
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    return os.path.join(base_dir, "..", "figures", filename)
 
 # =============================================================================
 # EXPERIMENT 1: Linear Gaussian
@@ -31,8 +36,8 @@ hist_nn = train_nn(nn_gauss, opt_nn, X_tr, y_tr, X_val, y_val)
 
 # Result Visualization
 # Since the boundary is linear, SR and NN should yield nearly identical test accuracy.
-plot_decision_boundary(sr_gauss, X_te, y_te, "SR — Gaussian", "../figures/gaussian_sr.png")
-plot_decision_boundary(nn_gauss, X_te, y_te, "NN — Gaussian", "../figures/gaussian_nn.png")
+plot_decision_boundary(sr_gauss, X_te, y_te, "SR — Gaussian", _fig_path("gaussian_sr.png"))
+plot_decision_boundary(nn_gauss, X_te, y_te, "NN — Gaussian", _fig_path("gaussian_nn.png"))
 
 print("Experiment 1 Complete: Expecting SR ≈ NN performance.")
 
@@ -51,12 +56,12 @@ train_softmax(sr_moons, SGD(lr=0.05), X_tr_m, y_tr_m, X_val_m, y_val_m)
 
 # 2. Neural Network
 nn_moons = OneHiddenLayerNN(d=2, hidden=32, k=2, lam=1e-4, seed=0)
-train_nn(nn_moons, SGD(lr=0.05), X_tr_m, y_tr_m, X_val_m, y_val_m)
+train_nn(nn_moons, SGD(lr=0.1), X_tr_m, y_tr_m, X_val_m, y_val_m,epochs=1000)
 
 # Result Visualization
 # The NN boundary should curve to wrap around the moons; the SR boundary will remain a straight line.
-plot_decision_boundary(sr_moons, X_te_m, y_te_m, "SR — Moons", "../figures/moons_sr.png")
-plot_decision_boundary(nn_moons, X_te_m, y_te_m, "NN — Moons", "../figures/moons_nn.png")
+plot_decision_boundary(sr_moons, X_te_m, y_te_m, "SR — Moons", _fig_path("moons_sr.png"))
+plot_decision_boundary(nn_moons, X_te_m, y_te_m, "NN — Moons", _fig_path("moons_nn.png"))
 
 print("Experiment 2 Complete: Expecting NN >> SR performance.")
 
@@ -94,6 +99,6 @@ for name, model in [('SR', sr_digit), ('NN', nn_digit)]:
 
 # Training Dynamics Visualization
 # Plots Loss vs Epoch and Accuracy vs Epoch for both models on one canvas
-plot_training_curves([hist_sr_d, hist_nn_d], ['SR', 'NN'], '../figures/training_dynamics.png')
+plot_training_curves([hist_sr_d, hist_nn_d], ['SR', 'NN'], _fig_path("training_dynamics.png"))
 
 print("\nExperiment 3 Complete: Dynamics saved to figures/training_dynamics.png")

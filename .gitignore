@@ -11,3 +11,4 @@ deliverables/committee_evaluation_sheet.tex
 requirements.txt
 implementation_plan.md
 .venv/
+__pycache__/
