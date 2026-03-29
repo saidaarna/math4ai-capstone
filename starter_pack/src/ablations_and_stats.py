@@ -123,7 +123,4 @@ def run_statistical_analysis():
         print(f"Accuracy:      {mean_acc:.4f} ± {ci_acc:.4f}")
         print(f"Cross-Entropy: {mean_ce:.4f} ± {ci_ce:.4f}")
 
-
-if __name__ == "__main__":
-    run_ablation_studies()
-    run_statistical_analysis()
+
