@@ -1,0 +1,33 @@
+>>> Starting Task 7.3: Ablation Studies...
+Experiment: Hidden Units = 2
+[plot] Decision boundary saved → C:\Users\HUWAEI\OneDrive\Desktop\Math4AI Final Capstone Project\math4ai_capstone\starter_pack\src\..\figures\ablation_h2.png
+Experiment: Hidden Units = 8
+[plot] Decision boundary saved → C:\Users\HUWAEI\OneDrive\Desktop\Math4AI Final Capstone Project\math4ai_capstone\starter_pack\src\..\figures\ablation_h8.png
+Experiment: Hidden Units = 32
+[plot] Decision boundary saved → C:\Users\HUWAEI\OneDrive\Desktop\Math4AI Final Capstone Project\math4ai_capstone\starter_pack\src\..\figures\ablation_h32.png
+
+Experiment: Comparing Optimizers on Digits
+Training model with SGD...
+-> SGD Test Accuracy: 0.9511 | Cross-Entropy: 0.1730
+Training model with Momentum...
+-> Momentum Test Accuracy: 0.9592 | Cross-Entropy: 0.1540
+Training model with Adam...
+-> Adam Test Accuracy: 0.9565 | Cross-Entropy: 0.1511
+[plot] Training curves saved → C:\Users\HUWAEI\OneDrive\Desktop\Math4AI Final Capstone Project\math4ai_capstone\starter_pack\src\..\figures\optimizer_comparison.png
+
+>>> Starting Task 7.4: Statistical Analysis (5 Seeds)...
+Running experiment with Seed 0...
+Running experiment with Seed 1...
+Running experiment with Seed 2...
+Running experiment with Seed 3...
+Running experiment with Seed 4...
+
+--- Final Statistical Results (Digits Dataset) ---
+
+Model: Softmax Regression
+Accuracy:      0.9380 ± 0.0015
+Cross-Entropy: 0.2683 ± 0.0027
+
+Model: 1-Hidden-Layer NN
+Accuracy:      0.9543 ± 0.0028
+Cross-Entropy: 0.1499 ± 0.0066

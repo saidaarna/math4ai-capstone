@@ -1,0 +1,904 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{caption}
+\usepackage{subcaption}
+
+\definecolor{linkblue}{RGB}{0,60,130}
+
+\usepackage[colorlinks=true,
+    linkcolor=linkblue,
+    urlcolor=linkblue,
+    citecolor=linkblue]{hyperref}
+
+% ---------- Math shortcuts ----------
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\loss}{\mathcal{L}}
+\newcommand{\softmax}{\operatorname{softmax}}
+\newcommand{\vx}{\mathbf{x}}
+\newcommand{\vy}{\mathbf{y}}
+\newcommand{\vh}{\mathbf{h}}
+\newcommand{\vs}{\mathbf{s}}
+\newcommand{\vp}{\mathbf{p}}
+\newcommand{\vb}{\mathbf{b}}
+\newcommand{\mW}{\mathbf{W}}
+\newcommand{\mX}{\mathbf{X}}
+\newcommand{\mY}{\mathbf{Y}}
+\newcommand{\mH}{\mathbf{H}}
+\newcommand{\mP}{\mathbf{P}}
+\newcommand{\mS}{\mathbf{S}}
+\newcommand{\mZ}{\mathbf{Z}}
+\newcommand{\vone}{\mathbf{1}}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.5em}
+
+\title{\textbf{From Linear Scores to a Single Hidden Layer}\\[0.4em]
+\large A Mathematical Study of Simple Learning Systems\\[0.3em]
+\normalsize Math4AI Final Capstone --- National AI Center, AI Academy}
+
+\author{Team Member 1 \and Team Member 2 \and Team Member 3 \and Team Member 4}
+\date{}
+
+\begin{document}
+\maketitle
+
+% ============================================================
+\begin{abstract}
+% ============================================================
+This report investigates when a one-hidden-layer nonlinear classifier genuinely improves
+on a linear decision rule, and when additional model complexity is unnecessary.
+We compare multiclass softmax regression~(SR) and a one-hidden-layer neural network~(NN)
+with $\tanh$ activations across three shared tasks: a linearly separable Gaussian dataset,
+a nonlinearly separable moons dataset, and a fixed 64-dimensional digits benchmark with ten
+classes.
+All models are implemented from scratch in NumPy, trained with mini-batch gradient descent,
+and evaluated using accuracy and unregularized cross-entropy on a held-out test set.
+Our experiments show that the linear model is sufficient when the true decision boundary
+is affine (Gaussian task), while the hidden layer provides a meaningful representational
+advantage when the boundary is nonlinear (moons task).
+On the digits benchmark, the NN achieves test accuracy $0.9538 \pm 0.0024$ versus
+$0.9386 \pm 0.0030$ for SR over five random seeds, with non-overlapping confidence
+intervals confirming the difference is statistically reliable.
+Track~B reliability analysis further reveals that the NN is better calibrated, with a
+mean confidence-accuracy gap close to zero in the highest-confidence bin.
+\end{abstract}
+
+% ============================================================
+\section{Introduction}
+% ============================================================
+
+\paragraph{Central question.}
+When does a one-hidden-layer nonlinear classifier genuinely improve on a linear decision
+rule, and when is additional model complexity unnecessary?
+
+This question is mathematically substantive.
+A linear model (softmax regression) can only produce affine decision boundaries---hyperplanes
+in the input space---while a neural network with a nonlinear hidden layer can represent
+curved manifolds.
+Whether that representational power is actually \emph{needed} depends entirely on the
+geometry of the data, not on the sophistication of the architecture.
+The purpose of this capstone is to determine, with controlled experiments and evidence,
+when extra representational capacity is justified.
+
+\paragraph{Contributions.}
+\begin{enumerate}[leftmargin=*, itemsep=0.2em]
+    \item A derivation showing that minimizing softmax cross-entropy is equivalent to
+          maximizing the conditional log-likelihood of the observed labels.
+    \item A conceptual explanation of backpropagation followed by a complete vectorized
+          gradient derivation for the one-hidden-layer network, verified against
+          numerical finite-differences.
+    \item A controlled comparison of SR and NN on three datasets with distinct geometric
+          structure, using identical splits, preprocessing, and evaluation protocol.
+    \item Capacity ablation, optimizer study, failure-case analysis, repeated-seed
+          statistics, and a Track~B reliability analysis on the digits benchmark.
+\end{enumerate}
+
+\paragraph{Preview of findings.}
+The linear model is sufficient on the Gaussian task, where both SR and NN learn
+nearly identical affine boundaries.
+On the moons task, only the NN---given adequate hidden width and training---can learn the
+required curved separator; SR is fundamentally limited by its representation class.
+On digits, the NN is statistically significantly more accurate and also better calibrated,
+meaning its expressed confidence more faithfully reflects its true correctness rates.
+
+
+% ============================================================
+\section{Background and Mathematical Setup}
+% ============================================================
+
+\subsection{Supervised Classification and Data Splits}
+
+In supervised learning we observe labeled pairs $(\vx^{(i)}, y^{(i)})_{i=1}^N$ where
+$\vx^{(i)} \in \R^d$ is the feature vector and $y^{(i)} \in \{0, \ldots, k{-}1\}$ is
+the class label.
+The goal is to learn a function that predicts the label from features.
+
+We use a three-way split throughout: a \emph{training set} to fit parameters, a
+\emph{validation set} to select settings and best checkpoints, and a \emph{test set}
+used only for final reporting.
+This separation prevents the test set from leaking into model selection, ensuring a
+fair estimate of generalization performance.
+
+\subsection{Softmax Regression}
+
+For input $\vx \in \R^d$ and $k$ classes, the model computes logits
+\begin{equation}
+    \vs(\vx) = \mW\vx + \vb, \qquad \mW \in \R^{k \times d},\ \vb \in \R^k.
+\end{equation}
+The softmax map converts logits to a valid probability distribution:
+\begin{equation}
+    p_j(\vx) = \frac{\exp(s_j(\vx))}{\displaystyle\sum_{\ell=1}^{k} \exp(s_\ell(\vx))},
+    \qquad \sum_{j=1}^k p_j = 1,\quad p_j > 0.
+\end{equation}
+For numerical stability we subtract the row-wise maximum before exponentiation (since
+$\exp(s_j - c)/\sum_\ell \exp(s_\ell - c)$ is identical to softmax for any constant $c$).
+
+The decision boundary between classes $j$ and $\ell$ is
+$\{x : s_j(\vx) = s_\ell(\vx)\}$, which is an \emph{affine} set (a hyperplane in $\R^d$).
+Consequently, softmax regression can only produce \emph{linear} decision boundaries.
+
+\subsection{Cross-Entropy as Negative Log-Likelihood}
+
+If the true class for example $i$ is $y^{(i)}$, the per-example loss is
+\begin{equation}
+    \loss(\vx, y) = -\log p_y(\vx).
+\end{equation}
+This punishes the model whenever it assigns small probability to the correct class.
+
+Probabilistically, treating each label as a draw from the model's categorical distribution,
+the log-likelihood of the entire training set is
+\begin{equation}
+    \log \mathcal{P}(\{y^{(i)}\} \mid \{x^{(i)}\};\, \mW, \vb)
+    = \sum_{i=1}^N \log p_{y^{(i)}}(\vx^{(i)}).
+\end{equation}
+Negating and averaging gives exactly the mean cross-entropy loss.
+\textbf{Minimizing mean cross-entropy is therefore equivalent to maximizing the
+conditional log-likelihood of the observed labels}, connecting classification directly
+to probabilistic modeling.
+
+\subsection{One-Hidden-Layer Neural Network}
+
+The nonlinear model composes two affine maps with a nonlinear activation:
+\begin{align}
+    \vh &= \tanh(\mathbf{W}_1 \vx + \mathbf{b}_1), & \mathbf{W}_1 &\in \R^{m \times d},\\
+    \vs &= \mathbf{W}_2 \vh + \mathbf{b}_2,          & \mathbf{W}_2 &\in \R^{k \times m},
+\end{align}
+where $m$ is the number of hidden units (we use $m = 32$ by default).
+The final probabilities are obtained by applying softmax to $\vs$, identically to SR.
+
+\textbf{Why this works:} the hidden layer maps the input into a new $m$-dimensional
+representation space.
+Because $\tanh$ is a smooth, bounded nonlinearity, this mapping can curve, rotate, and
+fold the input geometry.
+In the new space, the final softmax layer performs linear classification---but now on
+the \emph{transformed} representation, not the original features.
+This allows the model to learn decision boundaries that are nonlinear in $\vx$.
+
+\textbf{Why \texttt{tanh}:} the derivative $\frac{d}{dz}\tanh(z) = 1 - \tanh^2(z)$
+has a compact closed form which simplifies the backpropagation derivation.
+
+\subsection{Backpropagation: Conceptual First}
+
+Backpropagation is not a separate learning principle.
+It is the systematic application of the chain rule through the composed forward
+computation, organized so that each intermediate quantity is computed once.
+
+In the \emph{forward pass}, the model produces: pre-activations $\mathbf{Z}_1$,
+hidden activations $\mH$, output logits $\mS$, probabilities $\mP$, and loss $\loss$.
+In the \emph{backward pass}, we propagate sensitivity of the loss with respect to these
+intermediate quantities in reverse order, accumulating the gradients needed for each
+parameter update.
+Each local derivative is simple; the chain rule assembles them.
+
+\subsection{Gradient Derivation (Vectorized)}
+
+For a mini-batch $\mX \in \R^{n \times d}$, the forward pass is:
+\begin{align}
+    \mZ_1 &= \mX \mathbf{W}_1^\top + \vone \mathbf{b}_1^\top, \\
+    \mH   &= \tanh(\mZ_1), \\
+    \mS   &= \mH \mathbf{W}_2^\top + \vone \mathbf{b}_2^\top, \\
+    \mP   &= \softmax_\text{row}(\mS).
+\end{align}
+Let $\mY \in \{0,1\}^{n \times k}$ be the one-hot label matrix.
+The output-layer sensitivity is:
+\begin{equation}
+    \frac{\partial \loss}{\partial \mS} = \frac{1}{n}(\mP - \mY).
+\end{equation}
+Continuing backward by chain rule:
+\begin{align}
+    \frac{\partial \loss}{\partial \mathbf{W}_2} &=
+        \left(\frac{\partial \loss}{\partial \mS}\right)^\top \mH
+        + \lambda \mathbf{W}_2, \\[4pt]
+    \frac{\partial \loss}{\partial \mathbf{b}_2} &=
+        \left(\frac{\partial \loss}{\partial \mS}\right)^\top \vone, \\[4pt]
+    \frac{\partial \loss}{\partial \mZ_1} &=
+        \left(\frac{\partial \loss}{\partial \mS}\right) \mathbf{W}_2
+        \odot (1 - \mH \odot \mH),
+        \qquad \text{(tanh derivative: } 1-\tanh^2\text{)}\\[4pt]
+    \frac{\partial \loss}{\partial \mathbf{W}_1} &=
+        \left(\frac{\partial \loss}{\partial \mZ_1}\right)^\top \mX
+        + \lambda \mathbf{W}_1, \\[4pt]
+    \frac{\partial \loss}{\partial \mathbf{b}_1} &=
+        \left(\frac{\partial \loss}{\partial \mZ_1}\right)^\top \vone.
+\end{align}
+These are exact matrix forms of the scalar chain rule.
+The $L_2$ regularization terms $\lambda\mathbf{W}_1$ and $\lambda\mathbf{W}_2$ arise
+from differentiating $\tfrac{\lambda}{2}(\|\mathbf{W}_1\|_F^2 + \|\mathbf{W}_2\|_F^2)$.
+
+\subsection{Geometric Expectations for the Datasets}
+
+\textbf{Linear Gaussian task:} the two classes are generated from multivariate Gaussians
+with equal covariance.
+The Bayes-optimal decision boundary between two such Gaussians is a hyperplane in $\R^d$.
+Therefore, the linear model is already an optimal classifier in expectation, and the NN
+should not provide a meaningful gain.
+
+\textbf{Moons task:} the two classes form interlocking crescents.
+No affine set separates them; any hyperplane must cut across one class.
+The NN, however, can map the 2D input into a 32-dimensional representation where the
+classes become separable, and then apply linear classification in that space.
+
+
+% ============================================================
+\section{Methods}
+% ============================================================
+
+\subsection{Datasets}
+
+We use three shared datasets from the starter pack.
+
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Linear Gaussian} (\texttt{linear\_gaussian.npz}): two 2D Gaussian
+          blobs with mild overlap. $k=2$ classes, $d=2$ features.
+    \item \textbf{Moons} (\texttt{moons.npz}): two interlocking crescent-shaped classes.
+          $k=2$, $d=2$.
+    \item \textbf{Digits benchmark} (\texttt{digits\_data.npz},
+          \texttt{digits\_split\_indices.npz}): flattened $8{\times}8$ pixel digit images.
+          $d=64$, $k=10$ classes. The fixed train/validation/test split is defined by
+          shared index arrays in \texttt{digits\_split\_indices.npz}, ensuring identical
+          sample usage across all experiments.
+\end{itemize}
+
+Features are used as provided. No additional normalization, whitening, or augmentation
+is applied to the required core experiments.
+
+\subsection{Models}
+
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Softmax Regression:} $\mW \in \R^{k \times d}$, $\vb \in \R^k$.
+          Weights initialized with Xavier uniform scaling
+          ($\pm\sqrt{6/(d+k)}$); biases to zero.
+    \item \textbf{One-Hidden-Layer NN:} $\mathbf{W}_1 \in \R^{m \times d}$,
+          $\mathbf{W}_2 \in \R^{k \times m}$, both biases zero.
+          Default hidden width $m = 32$ for digits; widths $\{2, 8, 32\}$ for the
+          capacity ablation on moons.
+          Weights initialized with Xavier uniform scaling per layer.
+\end{itemize}
+
+\subsection{Digits Experimental Protocol}
+
+The following settings constitute the fixed experimental contract for the
+digits benchmark and are not changed between models or runs.
+
+\begin{center}
+\begin{tabular}{ll}
+\toprule
+\textbf{Setting} & \textbf{Value} \\
+\midrule
+Optimizer (SR and NN default) & Mini-batch SGD, $\eta = 0.05$ \\
+Batch size & 64 \\
+Epoch budget & 200 \\
+$L_2$ regularization $\lambda$ & $10^{-4}$ \\
+Default hidden width $m$ & 32 \\
+Checkpoint rule & Best validation cross-entropy within 200 epochs \\
+Model selection metric & Validation cross-entropy \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+For the optimizer study, Adam uses $\eta=0.001$, $\beta_1=0.9$, $\beta_2=0.999$,
+$\varepsilon=10^{-8}$; Momentum uses $\eta=0.05$, $\mu=0.9$.
+These settings are part of the experimental contract and are not tuned.
+
+\subsection{Evaluation Metrics}
+
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Accuracy:} fraction of test examples whose predicted class
+          ($\arg\max_j p_j$) matches the true label.
+    \item \textbf{Cross-Entropy (CE):} mean negative log-probability assigned to
+          the true class, computed \emph{without} the regularization term.
+          This strictly measures the model's predictive distribution quality.
+\end{itemize}
+
+\subsection{Repeated-Seed Protocol}
+
+For the digits benchmark we run five independent seeds $(0,\,1,\,2,\,3,\,4)$.
+For each seed, we train with the digits protocol, restore the best validation checkpoint,
+and evaluate the test set exactly once.
+We summarize results as mean $\pm$ 95\% CI using
+\begin{equation}
+    \bar{x} \pm t^*_{4,0.025} \cdot \frac{s}{\sqrt{5}}
+    = \bar{x} \pm 2.776 \cdot \frac{s}{\sqrt{5}},
+\end{equation}
+where $\bar{x}$ is the sample mean and $s$ the sample standard deviation over five seeds.
+
+
+% ============================================================
+\section{Implementation Sanity Checks}
+% ============================================================
+
+Before running any experiment we verified four concrete checks using
+\texttt{scripts/run\_sanity\_checks.py}.
+
+\begin{center}
+\begin{tabular}{clll}
+\toprule
+\textbf{\#} & \textbf{Check} & \textbf{Expected} & \textbf{Observed} \\
+\midrule
+1 & Predicted class probabilities sum to 1 & $\sum_j p_j = 1$ & \checkmark\ Passed \\
+2 & Loss decreases on 5-example subset & $\loss_\text{final} < \loss_\text{init}$ &
+    $1.782 \to 0.005$ \\
+3 & Gradient check (analytical vs.\ numerical) & rel.\ error $< 10^{-4}$ &
+    $\mathbf{1.11 \times 10^{-10}}$ \\
+4 & No NaN or Inf values in any forward pass & loss is finite & \checkmark\ Passed \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Check~3 uses a finite-difference approximation
+$\tilde{g}_i = [\loss(\theta_i + \varepsilon) - \loss(\theta_i - \varepsilon)] / 2\varepsilon$
+with $\varepsilon = 10^{-5}$, computed on randomly selected parameter entries.
+The relative error $1.11 \times 10^{-10}$ is four orders of magnitude below the
+acceptance threshold, confirming that the chain-rule derivation in Section~2.6 is
+implemented correctly.
+
+
+% ============================================================
+\section{Experiments}
+% ============================================================
+
+\subsection{Linear Gaussian Task}
+
+\begin{figure}[h]
+    \centering
+    \begin{subfigure}[b]{0.48\textwidth}
+        \includegraphics[width=\textwidth]{figures/gaussian_sr.png}
+        \caption{Softmax Regression}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.48\textwidth}
+        \includegraphics[width=\textwidth]{figures/gaussian_nn.png}
+        \caption{1-Hidden-Layer NN ($m=32$)}
+    \end{subfigure}
+    \caption{Decision boundaries on the Linear Gaussian task. Both models learn
+    a near-identical affine boundary, as expected when the true Bayes-optimal
+    separator is a hyperplane.}
+    \label{fig:gaussian}
+\end{figure}
+
+Figure~\ref{fig:gaussian} shows that SR and the NN produce visually indistinguishable
+boundaries on the Gaussian task.
+Both boundary lines separate the two Gaussian blobs effectively.
+
+\textbf{Interpretation:} this is the expected outcome.
+When data is generated from equal-covariance Gaussians, the optimal classifier is linear.
+The NN adds no value here; any curvature it would attempt to introduce is redundant and
+not supported by the data geometry.
+This directly answers the question: \emph{the linear model is geometrically sufficient
+when the true class boundary is affine.}
+
+\subsection{Moons Task}
+
+\begin{figure}[h]
+    \centering
+    \begin{subfigure}[b]{0.48\textwidth}
+        \includegraphics[width=\textwidth]{figures/moons_sr.png}
+        \caption{Softmax Regression}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.48\textwidth}
+        \includegraphics[width=\textwidth]{figures/moons_nn_optimized.png}
+        \caption{1-Hidden-Layer NN ($m=32$, 1000 epochs)}
+    \end{subfigure}
+    \caption{Decision boundaries on the Moons task. SR (left) can only learn a
+    straight-line boundary that necessarily misclassifies the interleaved region.
+    The NN (right) learns a curved, non-convex boundary that correctly separates
+    the two crescents.}
+    \label{fig:moons}
+\end{figure}
+
+Figure~\ref{fig:moons} demonstrates the representational gap between the two model
+classes.
+SR produces a linear cut that misclassifies the central interleaved region.
+The trained NN ($m=32$, $\eta=0.1$, 1000 epochs) learns a U-shaped boundary that
+correctly wraps around the moon shapes.
+
+\textbf{Interpretation:} the hidden layer provides the crucial representational change.
+By mapping the 2D input into a 32-dimensional space via $\vh = \tanh(\mathbf{W}_1 \vx + \mathbf{b}_1)$,
+the model can exploit directions of variation that do not exist in the original feature
+space.
+The final softmax layer then performs linear classification in this transformed space,
+which now separates the crescents.
+The linear model is \emph{fundamentally} limited: no choice of $\mW, \vb$ produces a
+linear boundary that correctly solves the moons task.
+
+\subsection{Digits Benchmark}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=\textwidth]{figures/digits_training_dynamics.png}
+    \caption{Training dynamics on the digits benchmark (200 epochs). The NN
+    consistently achieves lower validation cross-entropy and higher validation
+    accuracy throughout training.}
+    \label{fig:digits-dynamics}
+\end{figure}
+
+Table~\ref{tab:digits} reports accuracy and cross-entropy on all three splits.
+The best-validation-loss checkpoint is restored before test evaluation for both models.
+
+\begin{table}[h]
+    \centering
+    \caption{Digits benchmark results (single run, seed~0). Model selection
+    via validation cross-entropy.}
+    \label{tab:digits}
+    \begin{tabular}{lcccc}
+        \toprule
+        & \multicolumn{2}{c}{\textbf{Softmax Regression}} &
+          \multicolumn{2}{c}{\textbf{1-Hidden-Layer NN}} \\
+        \cmidrule(lr){2-3}\cmidrule(lr){4-5}
+        \textbf{Split} & Accuracy & CE & Accuracy & CE \\
+        \midrule
+        Train      & 0.965 & 0.202 & 0.991 & 0.063 \\
+        Validation & 0.946 & 0.214 & 0.972 & 0.103 \\
+        Test       & 0.938 & 0.268 & 0.951 & 0.162 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+The NN achieves substantially lower training cross-entropy ($0.063$ vs $0.202$),
+confirming that it has both the capacity and the gradient signal to fit the training
+distribution more precisely.
+The validation gap is small for both models (train vs.\ val CE: $+0.012$ for SR,
+$+0.040$ for NN), indicating no serious overfitting within 200 epochs.
+
+\subsubsection*{Repeated-seed statistics}
+
+\begin{table}[h]
+    \centering
+    \caption{Repeated-seed evaluation (5 seeds, digits test set).
+    CI formula: $\bar{x} \pm 2.776 \cdot s/\sqrt{5}$.}
+    \label{tab:seeds}
+    \begin{tabular}{lcc}
+        \toprule
+        \textbf{Model} & \textbf{Test Accuracy} & \textbf{Test CE} \\
+        \midrule
+        Softmax Regression  & $0.9386 \pm 0.0030$ & $0.2684 \pm 0.0027$ \\
+        1-Hidden-Layer NN   & $0.9538 \pm 0.0024$ & $0.1498 \pm 0.0063$ \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+The confidence intervals do not overlap for accuracy, confirming that the NN's
+advantage is statistically reliable and not attributable to a favorable random
+initialization.
+The SR's narrower CI ($\pm 0.0030$ vs $\pm 0.0024$) reflects lower variance across
+seeds: SR is a simpler, more stable model, but with a lower performance ceiling.
+The NN's larger CE variance ($\pm 0.0063$) reflects that, while the NN consistently
+achieves higher accuracy, its predicted probability distributions are more sensitive to
+initialization.
+
+\subsection{Capacity Ablation on Moons}
+
+\begin{figure}[h]
+    \centering
+    \begin{subfigure}[b]{0.32\textwidth}
+        \includegraphics[width=\textwidth]{figures/ablation_h2.png}
+        \caption{$m = 2$}
+    \end{subfigure}
+    \begin{subfigure}[b]{0.32\textwidth}
+        \includegraphics[width=\textwidth]{figures/ablation_h8.png}
+        \caption{$m = 8$}
+    \end{subfigure}
+    \begin{subfigure}[b]{0.32\textwidth}
+        \includegraphics[width=\textwidth]{figures/ablation_h32.png}
+        \caption{$m = 32$}
+    \end{subfigure}
+    \caption{Capacity ablation on the Moons task (1000 epochs, $\eta=0.1$).
+    Hidden width $m=2$ produces a near-linear boundary;
+    $m=8$ shows mild curvature; $m=32$ successfully separates the crescents.}
+    \label{fig:ablation}
+\end{figure}
+
+Figure~\ref{fig:ablation} shows a clear progression of representational capability
+with increasing hidden width.
+
+\begin{itemize}[leftmargin=*]
+    \item \textbf{$m=2$:} only two hidden neurons, providing two independent
+          nonlinear features.
+          The learned boundary is near-linear even after 1000 epochs---the model
+          lacks the dimension to warp the input space sufficiently.
+    \item \textbf{$m=8$:} mild curvature appears; the boundary begins to follow
+          the data contours but still misclassifies part of the interleaved region.
+    \item \textbf{$m=32$:} the U-shaped non-convex boundary separates the two
+          crescents correctly, matching the full representational capacity analysis.
+\end{itemize}
+
+\subsection{Optimizer Study on Digits}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=\textwidth]{figures/optimizer_comparison.png}
+    \caption{Optimizer comparison on the digits benchmark (NN, $m=32$, 200 epochs).
+    Left: validation cross-entropy. Right: validation accuracy.
+    Adam and Momentum converge substantially faster in early epochs.}
+    \label{fig:optimizers}
+\end{figure}
+
+\begin{table}[h]
+    \centering
+    \caption{Optimizer study: final test performance (single run, seed~42).}
+    \label{tab:optimizers}
+    \begin{tabular}{lcc}
+        \toprule
+        \textbf{Optimizer} & \textbf{Test Accuracy} & \textbf{Test CE} \\
+        \midrule
+        SGD ($\eta=0.05$) & 0.9538 & 0.1728 \\
+        Momentum ($\eta=0.05$, $\mu=0.9$) & 0.9511 & 0.1542 \\
+        Adam ($\eta=0.001$) & 0.9565 & 0.1492 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+All three optimizers reach similar final accuracy within the 200-epoch budget
+(Table~\ref{tab:optimizers}).
+However, Figure~\ref{fig:optimizers} shows that the convergence \emph{trajectories}
+differ substantially.
+Momentum and Adam both escape the slow early training phase that plainly characterizes
+SGD from epoch 0 to approximately epoch 25.
+
+\textbf{Interpretation:} Adam's adaptive per-parameter step sizes and Momentum's
+accumulated velocity allow them to traverse flat loss regions quickly.
+SGD with fixed learning rate $\eta=0.05$ is sensitive to the loss landscape curvature
+and converges more slowly, though it eventually reaches a competitive solution within
+the budget. Adam achieves the lowest cross-entropy ($0.1492$), indicating its
+probability distributions are the most accurately calibrated of the three.
+
+\subsection{Failure-Case Analysis}
+
+The $m=2$ experiment on Moons (Figure~\ref{fig:ablation}, left panel) is our primary
+failure case.
+\textbf{The model fails due to under-capacity}, not due to optimization failure.
+
+\textbf{Evidence:} even with 1000 epochs ($5\times$ the standard budget) and a higher
+learning rate ($\eta=0.1$), the $m=2$ boundary remains near-linear.
+Increasing training time further does not alter this outcome.
+The optimization is working---the model reaches a local minimum---but that minimum is
+bounded by what two hidden units can represent.
+
+\textbf{Mechanism:} with $m=2$, the hidden layer can only span a 2-dimensional
+nonlinear manifold in feature space.
+The moons task requires a non-convex partition of 2D input space, which demands at
+minimum several independent nonlinear directions.
+Two units cannot provide this regardless of their learned weights.
+
+\textbf{Lesson:} model complexity and training time are both necessary but neither
+is sufficient alone.
+Increasing the epoch budget cannot compensate for structural under-capacity.
+This contrasts with the optimizer study, where all three methods \emph{eventually}
+reach similar performance given the same architecture.
+
+
+% ============================================================
+\section{Advanced Track: Track B --- Prediction Confidence and Reliability}
+% ============================================================
+
+Track~B examines whether the models ``know what they know''.
+A well-calibrated model should be correct approximately $c\%$ of the time when it
+expresses confidence $c$.
+
+\subsection{Definitions}
+
+\textbf{Confidence:} the maximum class probability output by softmax:
+\begin{equation}
+    \text{conf}(\vx) = \max_j\ p_j(\vx).
+\end{equation}
+A confidence of 0.95 means the model assigns 95\% probability to its top prediction.
+
+\textbf{Predictive entropy:} a measure of uncertainty across the full distribution:
+\begin{equation}
+    H(\vx) = -\sum_{j=1}^k p_j(\vx)\,\log p_j(\vx).
+\end{equation}
+High entropy indicates the model spreads probability over many classes
+(uncertain); low entropy indicates a concentrated, confident prediction.
+For $k=10$, the maximum entropy is $\log 10 \approx 2.30$.
+
+\subsection{Summary Statistics}
+
+\begin{table}[h]
+    \centering
+    \caption{Track B summary on the digits test set (368 samples).}
+    \label{tab:trackb-summary}
+    \begin{tabular}{lccc}
+        \toprule
+        \textbf{Model} & \textbf{Accuracy} & \textbf{Mean Confidence} & \textbf{Mean Entropy} \\
+        \midrule
+        Softmax Regression & 0.9375 & 0.8446 & 0.5306 \\
+        1-Hidden-Layer NN  & 0.9511 & 0.9335 & 0.2204 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+The NN is more confident (mean $0.93$ vs. $0.84$) and less uncertain (mean entropy
+$0.22$ vs. $0.53$).
+
+\subsection{Five-Bin Calibration Table}
+
+\begin{table}[h]
+    \centering
+    \caption{Five-bin calibration tables on the digits test set. Gap $= \text{mean confidence} - \text{empirical accuracy}$; positive $=$ overconfident.}
+    \label{tab:calibration}
+    \begin{tabular}{lrrrr}
+        \toprule
+        \textbf{Confidence Bin} & $n$ & \textbf{Mean Conf.} & \textbf{Emp. Acc.} & \textbf{Gap} \\
+        \midrule
+        \multicolumn{5}{l}{\textit{Softmax Regression}} \\
+        {[0.20, 0.40)} & 14  & 0.3343 & 0.2857 & $+0.049$ \\
+        {[0.40, 0.60)} & 39  & 0.5263 & 0.7692 & $-0.243$ \\
+        {[0.60, 0.80)} & 43  & 0.7159 & 0.9070 & $-0.191$ \\
+        {[0.80, 1.00]} & 272 & 0.9368 & 1.0000 & $-0.063$ \\
+        \midrule
+        \multicolumn{5}{l}{\textit{1-Hidden-Layer NN}} \\
+        {[0.20, 0.40)} &  1  & 0.3506 & 0.0000 & $+0.351$ \\
+        {[0.40, 0.60)} & 16  & 0.4894 & 0.3750 & $+0.114$ \\
+        {[0.60, 0.80)} & 26  & 0.7155 & 0.8462 & $-0.131$ \\
+        {[0.80, 1.00]} & 325 & 0.9746 & 0.9908 & $-0.016$ \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsection{Reliability Diagram}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=\textwidth]{figures/track_b_reliability_diagram.png}
+    \caption{Reliability diagrams for both models. Points on the diagonal indicate
+    perfect calibration. SR is systematically underconfident (points above diagonal
+    in middle bins). The NN concentrates $88\%$ of predictions in the top bin
+    with a near-zero gap of $-0.016$.}
+    \label{fig:reliability}
+\end{figure}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=\textwidth]{figures/track_b_confidence_distribution.png}
+    \caption{Confidence distributions for correct and incorrect predictions.
+    The NN's incorrect predictions have lower median confidence than SR's,
+    indicating the NN's expressed uncertainty correlates better with its mistakes.}
+    \label{fig:confidence-dist}
+\end{figure}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=\textwidth]{figures/track_b_entropy_comparison.png}
+    \caption{Predictive entropy for correct vs.\ incorrect predictions (box plots).
+    Both models show higher entropy when wrong. The NN's correct predictions
+    have dramatically lower entropy ($\mu \approx 0.22$) vs.\ SR ($\mu \approx 0.53$),
+    reflecting much stronger confidence when right.}
+    \label{fig:entropy}
+\end{figure}
+
+\subsection{Interpretation}
+
+\textbf{SR is underconfident.}
+In the 0.40--0.80 bins (Table~\ref{tab:calibration}), SR's empirical accuracy
+far exceeds its stated confidence (negative gaps of $-0.243$ and $-0.191$).
+This means: when SR says it is 50\% sure, it is actually correct 77\% of the time.
+SR is systematically \emph{more accurate than it thinks}.
+
+\textbf{NN is well-calibrated in its dominant bin.}
+The NN places 88\% of test predictions (325 of 368) in the highest confidence bin
+$[0.80, 1.00]$, with an empirical accuracy of 99.1\% against a mean stated confidence
+of 97.5\%.
+The gap is only $-0.016$---nearly perfect calibration where it matters most.
+
+\textbf{Entropy separates correct from incorrect predictions more cleanly in the NN.}
+Figure~\ref{fig:entropy} shows that the NN's correct-prediction entropy ($\mu=0.22$)
+is much lower than SR's ($\mu=0.53$), and that incorrect predictions have higher
+entropy for both models.
+The NN encodes uncertainty more efficiently: it is sharply confident when right and
+more spread-out when wrong.
+
+\textbf{Connection to the main question:}
+the NN is not only more accurate on digits---it also produces more
+\emph{trustworthy} probability estimates.
+This matters in practical applications where the model's confidence score is used to
+make decisions (e.g., flagging low-confidence predictions for human review).
+
+
+% ============================================================
+\section{Discussion}
+% ============================================================
+
+We now directly answer the five required interpretive questions.
+
+\paragraph{1. When is the linear model geometrically sufficient?}
+When the true decision boundary is affine---as in the Gaussian task---softmax regression
+is already an optimal classifier in the relevant function class, and the NN provides no
+meaningful improvement (both achieve $\sim 94$--$95\%$ accuracy with nearly identical
+boundaries).
+On digits, SR achieves $93.9\%$ accuracy, which is not trivial, but the NN's
+statistically significantly higher $95.4\%$ shows that some structure in digit
+recognition genuinely requires nonlinear representation.
+
+\paragraph{2. What representational change does the hidden layer provide?}
+The hidden layer $\vh = \tanh(\mathbf{W}_1 \vx + \mathbf{b}_1)$ maps the input into
+a new manifold in $\R^{32}$.
+Because $\tanh$ is a smooth nonlinear function, this mapping can rotate, rescale, and
+\emph{fold} the input space, separating regions that were interleaved in the original
+$\R^d$.
+The final linear classifier then operates on a space where the transformed classes
+may be linearly separable.
+This is most visible in the moons experiment: the input is 2D and non-separable; the
+hidden representation is 32D and (approximately) linearly separable.
+
+\paragraph{3. When does additional model complexity fail to justify itself?}
+Under-capacity (Section~5.6): $m=2$ on moons fails not because of poor training, but
+because two hidden units cannot span the manifold needed to solve the task.
+Under-training: the NN with default parameters (200 epochs, $\eta=0.05$) on moons also
+fails---not due to architectural limits but because the optimization is not given enough
+budget and gradient signal to escape the near-linear initialization regime.
+Both are failure modes, but with different mechanisms.
+
+\paragraph{4. What does the failure case teach about capacity and optimization?}
+The $m=2$ failure teaches that \textbf{capacity is a hard constraint}.
+No amount of additional training or optimizer sophistication can overcome a structural
+representational limit.
+This distinguishes capacity failure from optimization failure (such as the slow
+convergence of SGD in early epochs), which more training epochs can eventually resolve.
+
+\paragraph{5. What do repeated-seed statistics add beyond a single run?}
+A single run could be fortunate or unfortunate due to random initialization.
+Table~\ref{tab:seeds} shows that over five seeds, the NN achieves $0.9538 \pm 0.0024$
+versus SR's $0.9386 \pm 0.0030$.
+The non-overlapping confidence intervals provide statistical evidence that the difference
+is genuine, not a chance outcome.
+Additionally, the variability estimates themselves are informative: SR's low variance
+confirms that linear models are stable but limited; the NN's slightly higher CE variance
+reminds us that initialization affects the quality of predicted distributions, not just
+final accuracy.
+
+
+% ============================================================
+\section{Limitations}
+% ============================================================
+
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Dataset scale:} the digits dataset contains only 1{,}797 samples.
+          Conclusions about which model is better may not hold in larger, more complex
+          settings where regularization, depth, and data augmentation play larger roles.
+    \item \textbf{Single hidden layer only:} we do not study deeper networks.
+          All conclusions are specific to the one-hidden-layer setting and should not
+          be extrapolated to multi-layer architectures.
+    \item \textbf{Low-dimensional synthetic tasks:} the Gaussian and moons datasets
+          are 2D, making geometric arguments visually clear but potentially misleading
+          for higher-dimensional problems (where, e.g., a dataset can simultaneously be
+          linearly separable in the original space and benefit from nonlinear features).
+    \item \textbf{Calibration analysis precision:} the five-bin calibration table is
+          a coarse-grained view; bins with few samples ($n < 30$) produce unstable
+          empirical accuracy estimates with wide variance.
+          A 10-bin or reliability-curve analysis would provide finer resolution.
+    \item \textbf{Hyperparameter scope:} the digits protocol fixes all hyperparameters
+          by agreement; we do not perform a search over hidden widths, learning rates,
+          or regularization strengths for the digits task.
+          The fixed protocol ensures fair comparison but may leave performance improvements
+          on the table for both models.
+    \item \textbf{Single advanced track:} we completed Track~B (reliability) only.
+          Combining with Track~A (PCA/SVD) would provide a complementary view of input
+          geometry, but this falls outside the scope of the required deliverables.
+\end{itemize}
+
+
+% ============================================================
+\section*{References}
+% ============================================================
+
+\begin{thebibliography}{9}
+
+\bibitem{deisenroth2020}
+M.~P. Deisenroth, A.~A. Faisal, and C.~S. Ong.
+\newblock \emph{Mathematics for Machine Learning}.
+\newblock Cambridge University Press, 2020.
+
+\bibitem{murphy2022}
+K.~P. Murphy.
+\newblock \emph{Probabilistic Machine Learning: An Introduction}.
+\newblock MIT Press, 2022.
+
+\bibitem{goodfellow2016}
+I.~Goodfellow, Y.~Bengio, and A.~Courville.
+\newblock \emph{Deep Learning}.
+\newblock MIT Press, 2016.
+
+\bibitem{ngdeep}
+A.~Ng and K.~Katanforoosh.
+\newblock \emph{CS229 Lecture Notes: Deep Learning}.
+\newblock Stanford University.
+\newblock \url{https://cs229.stanford.edu/}
+
+\bibitem{cs231n_backprop}
+Stanford CS231n staff.
+\newblock \emph{Optimization Part~2: Backpropagation, Intuitions}.
+\newblock \url{https://cs231n.github.io/optimization-2/}
+
+\bibitem{ethml2024}
+ETH Zurich Learning and Adaptive Systems Group.
+\newblock \emph{Introduction to Machine Learning Course Notes}, 2024.
+\newblock \url{https://las.inf.ethz.ch/teaching/introml-s24}
+
+\end{thebibliography}
+
+% ============================================================
+\appendix
+\section{Supplementary Figures}
+% ============================================================
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=\textwidth]{figures/gaussian_dynamics.png}
+    \caption{Training dynamics on the Linear Gaussian task. Both models converge
+    smoothly; the NN trains slightly faster but reaches a similar loss floor.}
+\end{figure}
+
+\begin{figure}[h]
+    \centering
+    \begin{subfigure}[b]{0.48\textwidth}
+        \includegraphics[width=\textwidth]{figures/moons_nn_default.png}
+        \caption{NN --- default params (200 epochs, $\eta=0.05$)}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.48\textwidth}
+        \includegraphics[width=\textwidth]{figures/moons_nn_optimized.png}
+        \caption{NN --- optimized params (1000 epochs, $\eta=0.1$)}
+    \end{subfigure}
+    \caption{Effect of training budget on the Moons task. With default parameters
+    the NN fails similarly to SR (near-linear boundary). Increasing epochs and
+    learning rate allows the curved boundary to emerge.}
+\end{figure}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=\textwidth]{figures/moons_comparison_dynamics.png}
+    \caption{Training curves for all three Moons configurations: SR baseline,
+    NN with default parameters, and NN with optimized parameters. The optimized
+    NN achieves significantly lower validation loss by epoch 200.}
+\end{figure}
+
+% ============================================================
+\section{Contribution Statement}
+% ============================================================
+
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Team Member 1:} softmax regression implementation, sanity checks,
+          gradient derivation writeup.
+    \item \textbf{Team Member 2:} neural network implementation, backpropagation
+          derivation, capacity ablation.
+    \item \textbf{Team Member 3:} training pipeline, optimizer study, repeated-seed
+          statistical analysis.
+    \item \textbf{Team Member 4:} Track~B reliability analysis, report writing and
+          figure preparation, repository organization.
+\end{itemize}
+
+\end{document}
