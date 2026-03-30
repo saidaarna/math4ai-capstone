@@ -16,6 +16,8 @@ The foundation of the project relies on deterministic data generation to ensure 
     * **Objective**: Prepares the UCI Optical Recognition of Handwritten Digits dataset.
     * **Normalization**: Implements feature scaling to the $[0, 1]$ range. This is critical for preventing gradient vanishing in the `tanh` activation layers.
     * **Stratification**: Employs stratified sampling to maintain class proportions across Train/Val/Test splits, mitigating label shift issues.
+* **`inspect_data.ipynb`**:
+    * **Exploratory Data Analysis**: A Jupyter notebook used to inspect the shapes, class distributions, and value ranges of all data files before model implementation. Ensuring data integrity at the start of the project.
 
 ### B. Validation & Testing
 * **`run_sanity_checks.py`**:

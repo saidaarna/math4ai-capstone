@@ -193,14 +193,6 @@ Run `python sanity_checks.py` from this directory to execute all checks.
 
 ---
 
-### inspect_data.ipynb
-
-A Jupyter notebook used during Day 1 to inspect the shapes, class distributions and value
-ranges of all four data files before any model was implemented. Not part of the model
-pipeline; included for transparency and reproducibility of the data inspection step.
-
----
-
 ## Running the Code
 
 All scripts are designed to be run from inside the `src/` directory:
