@@ -10,14 +10,16 @@ class OneHiddenLayerNN:
         rng = np.random.default_rng(seed)
         
         # --- Layer 1 (Input to Hidden) ---
-        # Weights (W1): Scaled by 0.1 to keep initial values small. Shape: (hidden_units, input_features)
-        self.W1 = rng.standard_normal((hidden, d)) * 0.1
+        # Weights (W1): Xavier/Glorot limit: sqrt(6 / (fan_in + fan_out)) Shape: (hidden_units, input_features)
+        limit1 = np.sqrt(6 / (d + hidden))
+        self.W1 = rng.uniform(-limit1, limit1, (hidden, d))
         # Biases (b1): Initialized to zero. Shape: (hidden_units,)
         self.b1 = np.zeros(hidden)
         
         # --- Layer 2 (Hidden to Output) ---
         # Weights (W2): Shape: (num_classes, hidden_units)
-        self.W2 = rng.standard_normal((k, hidden)) * 0.1
+        limit2 = np.sqrt(6 / (hidden + k))
+        self.W2 = rng.uniform(-limit2, limit2, (k, hidden))
         # Biases (b2): Initialized to zero. Shape: (num_classes,)
         self.b2 = np.zeros(k)
         

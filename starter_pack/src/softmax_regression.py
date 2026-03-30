@@ -12,8 +12,12 @@ class SoftmaxRegression:
         rng = np.random.default_rng(seed)
 
         # Weights W initialized to shape (k, d).
-        # Scaled by 0.01 to ensure initial scores (logits) are near zero, preventing extreme probabilities in the first softmax pass.
-        self.W = rng.standard_normal((k, d)) * 0.01
+        # Initialize weights using the Xavier/Glorot criterion (U[-limit, limit]).
+        # This scales the initial weights according to the input (d) and output (k) dimensions,
+        # preserving the variance of the signal to prevent vanishing gradients and
+        # ensuring that the initial softmax probabilities remain non-extreme.
+        limit = np.sqrt(6 / (d + k))
+        self.W = rng.uniform(-limit, limit, (k, d))
         self.b = np.zeros(k)
         self.lam = lam
 

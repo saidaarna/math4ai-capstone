@@ -39,9 +39,16 @@ def run_experiments():
     # Since the boundary is linear, SR and NN should yield nearly identical test accuracy.
     plot_decision_boundary(sr_gauss, X_te, y_te, "SR — Gaussian", _fig_path("gaussian_sr.png"))
     plot_decision_boundary(nn_gauss, X_te, y_te, "NN — Gaussian", _fig_path("gaussian_nn.png"))
-    
+
+    # Training Dynamics for Gaussian
+    plot_training_curves(
+        [hist_sr, hist_nn],
+        ['SR', 'NN'],
+        _fig_path("gaussian_dynamics.png"),
+        title="Training Dynamics: Linear Gaussian Task")
+
     print("Experiment 1 Complete: Expecting SR ≈ NN performance.")
-    
+
     # =============================================================================
     # EXPERIMENT 2: Moons
     # Context: Interlocking semi-circles (non-linearly separable).
@@ -50,20 +57,36 @@ def run_experiments():
     # =============================================================================
     
     X_tr_m, y_tr_m, X_val_m, y_val_m, X_te_m, y_te_m = load_synthetic("../data/moons.npz")
-    
-    # 1. Softmax Regression
+
+    # 1. Softmax Regression (Baseline)
     sr_moons = SoftmaxRegression(d=2, k=2, lam=1e-4, seed=0)
-    train_softmax(sr_moons, SGD(lr=0.05), X_tr_m, y_tr_m, X_val_m, y_val_m)
-    
-    # 2. Neural Network
-    nn_moons = OneHiddenLayerNN(d=2, hidden=32, k=2, lam=1e-4, seed=0)
-    train_nn(nn_moons, SGD(lr=0.1), X_tr_m, y_tr_m, X_val_m, y_val_m,epochs=1000)
-    
+    hist_sr_m = train_softmax(sr_moons, SGD(lr=0.05), X_tr_m, y_tr_m, X_val_m, y_val_m)
+
+    # 2. Neural Network — DEFAULT PARAMS (The "Failure Case")
+    # This shows why the digits protocol fails on the moons geometry
+    nn_moons_def = OneHiddenLayerNN(d=2, hidden=32, k=2, lam=1e-4, seed=0)
+    hist_nn_def = train_nn(nn_moons_def, SGD(lr=0.05), X_tr_m, y_tr_m, X_val_m, y_val_m, epochs=200)
+
+    # 3. Neural Network — OPTIMIZED PARAMS (The "Success Case")
+    # Lower lambda, higher LR, and more epochs to escape the linear plateau
+    nn_moons_opt = OneHiddenLayerNN(d=2, hidden=32, k=2, lam=1e-6, seed=0)
+    hist_nn_opt = train_nn(nn_moons_opt, SGD(lr=0.1), X_tr_m, y_tr_m, X_val_m, y_val_m, epochs=1000)
+
     # Result Visualization
     # The NN boundary should curve to wrap around the moons; the SR boundary will remain a straight line.
-    plot_decision_boundary(sr_moons, X_te_m, y_te_m, "SR — Moons", _fig_path("moons_sr.png"))
-    plot_decision_boundary(nn_moons, X_te_m, y_te_m, "NN — Moons", _fig_path("moons_nn.png"))
-    
+    plot_decision_boundary(sr_moons, X_te_m, y_te_m, "SR — Moons (Linear)", _fig_path("moons_sr.png"))
+    plot_decision_boundary(nn_moons_def, X_te_m, y_te_m, "NN — Moons (Default/Failed)",
+                           _fig_path("moons_nn_default.png"))
+    plot_decision_boundary(nn_moons_opt, X_te_m, y_te_m, "NN — Moons (Optimized/Curly)",
+                           _fig_path("moons_nn_optimized.png"))
+
+    plot_training_curves(
+        [hist_sr_m, hist_nn_def, hist_nn_opt],
+        ['SR Baseline', 'NN Default', 'NN Optimized'],
+        _fig_path("moons_comparison_dynamics.png"),
+        title="Moons Task: Impact of Parameter Choice"
+    )
+
     print("Experiment 2 Complete: Expecting NN >> SR performance.")
     
     # =============================================================================
@@ -100,6 +123,11 @@ def run_experiments():
     
     # Training Dynamics Visualization
     # Plots Loss vs Epoch and Accuracy vs Epoch for both models on one canvas
-    plot_training_curves([hist_sr_d, hist_nn_d], ['SR', 'NN'], _fig_path("training_dynamics.png"))
+    plot_training_curves(
+        [hist_sr_d, hist_nn_d],
+        ['SR', 'NN'],
+        _fig_path("digits_training_dynamics.png"),
+        title="Training Dynamics: Digits Benchmark"
+    )
     
-    print("\nExperiment 3 Complete: Dynamics saved to figures/training_dynamics.png")
+    print("\nExperiment 3 Complete: Dynamics saved to figures/digits_training_dynamics.png")
