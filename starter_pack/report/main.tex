@@ -49,7 +49,7 @@
 \large A Mathematical Study of Simple Learning Systems\\[0.3em]
 \normalsize Math4AI Final Capstone --- National AI Center, AI Academy}
 
-\author{Team Member 1 \and Team Member 2 \and Team Member 3 \and Team Member 4}
+\author{Nazrin Aliyeva \and Nigar Rustamova \and Laman Mirzayeva \and Saida Arabova}
 \date{}
 
 \begin{document}
@@ -69,8 +69,8 @@ and evaluated using accuracy and unregularized cross-entropy on a held-out test 
 Our experiments show that the linear model is sufficient when the true decision boundary
 is affine (Gaussian task), while the hidden layer provides a meaningful representational
 advantage when the boundary is nonlinear (moons task).
-On the digits benchmark, the NN achieves test accuracy $0.9538 \pm 0.0024$ versus
-$0.9386 \pm 0.0030$ for SR over five random seeds, with non-overlapping confidence
+On the digits benchmark, the NN achieves test accuracy $0.9543 \pm 0.0028$ versus
+$0.9380 \pm 0.0015$ for SR over five random seeds, with non-overlapping confidence
 intervals confirming the difference is statistically reliable.
 Track~B reliability analysis further reveals that the NN is better calibrated, with a
 mean confidence-accuracy gap close to zero in the highest-confidence bin.
@@ -485,8 +485,8 @@ $+0.040$ for NN), indicating no serious overfitting within 200 epochs.
         \toprule
         \textbf{Model} & \textbf{Test Accuracy} & \textbf{Test CE} \\
         \midrule
-        Softmax Regression  & $0.9386 \pm 0.0030$ & $0.2684 \pm 0.0027$ \\
-        1-Hidden-Layer NN   & $0.9538 \pm 0.0024$ & $0.1498 \pm 0.0063$ \\
+        Softmax Regression  & $0.9380 \pm 0.0015$ & $0.2683 \pm 0.0027$ \\
+        1-Hidden-Layer NN   & $0.9543 \pm 0.0028$ & $0.1499 \pm 0.0066$ \\
         \bottomrule
     \end{tabular}
 \end{table}
@@ -494,9 +494,9 @@ $+0.040$ for NN), indicating no serious overfitting within 200 epochs.
 The confidence intervals do not overlap for accuracy, confirming that the NN's
 advantage is statistically reliable and not attributable to a favorable random
 initialization.
-The SR's narrower CI ($\pm 0.0030$ vs $\pm 0.0024$) reflects lower variance across
+The SR's narrower CI ($\pm 0.0015$ vs $\pm 0.0028$) reflects lower variance across
 seeds: SR is a simpler, more stable model, but with a lower performance ceiling.
-The NN's larger CE variance ($\pm 0.0063$) reflects that, while the NN consistently
+The NN's larger CE variance ($\pm 0.0066$) reflects that, while the NN consistently
 achieves higher accuracy, its predicted probability distributions are more sensitive to
 initialization.
 
@@ -771,8 +771,8 @@ convergence of SGD in early epochs), which more training epochs can eventually r
 
 \paragraph{5. What do repeated-seed statistics add beyond a single run?}
 A single run could be fortunate or unfortunate due to random initialization.
-Table~\ref{tab:seeds} shows that over five seeds, the NN achieves $0.9538 \pm 0.0024$
-versus SR's $0.9386 \pm 0.0030$.
+Table~\ref{tab:seeds} shows that over five seeds, the NN achieves $0.9543 \pm 0.0028$
+versus SR's $0.9380 \pm 0.0015$.
 The non-overlapping confidence intervals provide statistical evidence that the difference
 is genuine, not a chance outcome.
 Additionally, the variability estimates themselves are informative: SR's low variance
@@ -891,14 +891,14 @@ ETH Zurich Learning and Adaptive Systems Group.
 % ============================================================
 
 \begin{itemize}[leftmargin=*]
-    \item \textbf{Team Member 1:} softmax regression implementation, sanity checks,
-          gradient derivation writeup.
-    \item \textbf{Team Member 2:} neural network implementation, backpropagation
-          derivation, capacity ablation.
-    \item \textbf{Team Member 3:} training pipeline, optimizer study, repeated-seed
-          statistical analysis.
-    \item \textbf{Team Member 4:} Track~B reliability analysis, report writing and
-          figure preparation, repository organization.
+    \item \textbf{Nazrin Aliyeva:} Track~B reliability analysis, sanity checks,
+          plotting, report writing, repository management.
+    \item \textbf{Nigar Rustamova:} data loading, softmax regression implementation,
+          core experiments, report writing, repository management.
+    \item \textbf{Laman Mirzayeva:} optimizers, evaluation, ablations and statistical
+          analysis, report writing, repository management.
+    \item \textbf{Saida Arabova:} data inspection, neural network implementation,
+          model training, report writing, repository management.
 \end{itemize}
 
 \end{document}
