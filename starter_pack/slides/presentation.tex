@@ -88,18 +88,18 @@
     \begin{columns}
         \begin{column}{0.5\textwidth}
             \centering
-            \includegraphics[height=0.6\textheight]{figures/moons_sr.png}\\
-            \small Softmax Regression (Fails)
+            \includegraphics[height=0.6\textheight]{figures/moons_nn_default.png}\\
+            \small Neural Network (Default)
         \end{column}
         \begin{column}{0.5\textwidth}
             \centering
             \includegraphics[height=0.6\textheight]{figures/moons_nn_optimized.png}\\
-            \small Neural Network (Succeeds)
+            \small Neural Network (Changed/Optimized)
         \end{column}
     \end{columns}
     
     \vspace{0.5em}
-    \textbf{Conclusion:} The NN's hidden layer maps the 2D input into a 32D space where the classes can be linearly separated, solving a problem SR intrinsically cannot.
+    \textbf{Conclusion:} While the NN is structurally capable of solving nonlinearly separable problems, proper optimization (learning rate, epochs, and regularization) is essential to find the correct decision boundary.
 \end{frame}
 
 % Slide 6: Results on Digits Benchmark
@@ -118,7 +118,7 @@
             \midrule
             Train      & 0.965 & 0.202 & 0.991 & 0.063 \\
             Validation & 0.946 & 0.214 & 0.972 & 0.103 \\
-            Test       & 0.938 & 0.268 & 0.951 & 0.162 \\
+            Test       & 0.938 & 0.268 & 0.951 & 0.163 \\
             \bottomrule
         \end{tabular}
     \end{table}
@@ -138,8 +138,8 @@
             \toprule
             \textbf{Model} & \textbf{Test Accuracy (95\% CI)} & \textbf{Test CE (95\% CI)} \\
             \midrule
-            Softmax Regression  & $0.9386 \pm 0.0030$ & $0.2684 \pm 0.0027$ \\
-            1-Hidden-Layer NN   & $0.9538 \pm 0.0024$ & $0.1498 \pm 0.0063$ \\
+            Softmax Regression  & $0.9375 \pm 0.0024$ & $0.2683 \pm 0.0027$ \\
+            1-Hidden-Layer NN   & $0.9511 \pm 0.0000$ & $0.1671 \pm 0.0077$ \\
             \bottomrule
         \end{tabular}
     \end{table}
@@ -154,25 +154,37 @@
 \end{frame}
 
 % Slide 8: Failure Case Analysis
-\begin{frame}{Failure Case Analysis: Capacity Limits}
-    \textbf{Experiment:} Moons task with a severely restricted hidden width ($m=2$).
+\begin{frame}{Failure Case Analysis: Optimization Limits}
+    \textbf{Experiment:} Moons task, default constraints (200 epochs, $\eta=0.05$).
     
-    \begin{columns}
-        \begin{column}{0.4\textwidth}
-            \centering
-            \includegraphics[width=\textwidth]{figures/ablation_h2.png}
-        \end{column}
-        \begin{column}{0.6\textwidth}
-            \begin{itemize}
-                \item Even with 1000 epochs (5x budget) and an optimized learning rate, the boundary remains near-linear.
-                \item \textbf{Why?} A 2-dimensional nonlinear manifold cannot solve a non-convex partition of 2D input space.
-                \item \textbf{Lesson:} This is an \textit{under-capacity} failure, not an optimization failure. No amount of training time can overcome a structural representational limit.
-            \end{itemize}
-        \end{column}
-    \end{columns}
+    \begin{center}
+        \includegraphics[width=0.9\textwidth]{figures/capacity_ablation_default_combined.png}
+    \end{center}
+    
+    \vspace{-0.5em}
+    \begin{itemize}
+        \item The boundary remains near-linear across \textit{all} widths, even with excessive capacity ($m=32$).
+        \item \textbf{Why?} The default settings are too slow to escape the initial plateau within the strict 200-epoch budget.
+        \item \textbf{Lesson:} Highly complex models are useless without the proper mathematical optimization to train them.
+    \end{itemize}
 \end{frame}
 
-% Slide 9: Track B - Prediction Confidence
+% Slide 9: Capacity Ablation (Optimized)
+\begin{frame}{Capacity Ablation: Complexity is not always better}
+    \textbf{Experiment:} Moons task, optimized training (1000 epochs, $\eta=0.1$).
+    
+    \begin{center}
+        \includegraphics[width=0.9\textwidth]{figures/capacity_ablation_combined.png}
+    \end{center}
+    
+    \vspace{-0.5em}
+    \begin{itemize}
+        \item Given proper optimization, validation precision reaches $0.9875$ identically across all widths.
+        \item \textbf{Key Insight:} \textbf{A highly complex model is not always better.} Introducing massive capacity ($m=32$) provided no advantage over $m=2$; the extremely lightweight network was fully sufficient.
+    \end{itemize}
+\end{frame}
+
+% Slide 10: Track B - Prediction Confidence
 \begin{frame}{Track B: Prediction Confidence and Reliability}
     \textit{Does the model know when it is likely to be wrong?}
     
@@ -184,14 +196,14 @@
         \begin{column}{0.6\textwidth}
             \begin{itemize}
                 \item \textbf{Softmax Regression} is systematically underconfident (empirical accuracy exceeds stated probability).
-                \item \textbf{The Neural Network} is well-calibrated. In its highest confidence bin $[0.80, 1.00]$, its mean confidence is 97.5\% and empirical accuracy is 99.1\% (Gap = $-0.016$).
-                \item The NN encodes uncertainty more efficiently: sharply confident when right, higher entropy when wrong.
+                \item \textbf{The Neural Network} is well-calibrated in its highest confidence bin ($Gap \approx -0.016$).
+                \item \textbf{However}, although the NN has higher absolute accuracy, it can be more overconfident when giving wrong answers (e.g., $0\%$ accuracy in the $20-40\%$ bin).
             \end{itemize}
         \end{column}
     \end{columns}
 \end{frame}
 
-% Slide 10: Limitations
+% Slide 11: Limitations
 \begin{frame}{Limitations of Our Study}
     \begin{itemize}
         \item \textbf{Dataset Scale:} The digits dataset contains only 1,797 samples. Our findings may not seamlessly extrapolate to large-scale vision or language regimes.
@@ -200,7 +212,7 @@
     \end{itemize}
 \end{frame}
 
-% Slide 11: Summary
+% Slide 12: Summary
 \begin{frame}{Summary}
     \begin{itemize}
         \item \textbf{When is linear sufficient?} When the data geometry dictates an affine separator (e.g., Gaussian task).

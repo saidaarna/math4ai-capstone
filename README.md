@@ -100,6 +100,7 @@ math4ai_capstone/
     │   └── track_b.py                    # Track B: confidence and reliability analysis
     │
     ├── scripts/                          # Entry-point runners (execute these)
+    |   ├── inspect_data.ipynb            # Inspect the data
     │   ├── run_experiments.py            # Gaussian, Moons, Digits experiments
     │   ├── run_ablations.py              # Capacity ablation + optimizer study + 5-seed stats
     │   ├── run_sanity_checks.py          # Implementation verification checks
@@ -198,14 +199,14 @@ The digits benchmark follows a strict fixed contract (per assignment requirement
 | Model | Test Accuracy | Test CE |
 |---|---|---|
 | Softmax Regression | 0.938 | 0.268 |
-| 1-Hidden-Layer NN | 0.951 | 0.162 |
+| 1-Hidden-Layer NN | 0.951 | 0.163 |
 
 ### Repeated-Seed Statistics (5 seeds, 95% CI)
 
 | Model | Test Accuracy | Test CE |
 |---|---|---|
-| Softmax Regression | 0.9386 ± 0.0030 | 0.2684 ± 0.0027 |
-| 1-Hidden-Layer NN | 0.9538 ± 0.0024 | 0.1498 ± 0.0063 |
+| Softmax Regression | 0.9375 ± 0.0024 | 0.2683 ± 0.0027 |
+| 1-Hidden-Layer NN | 0.9511 ± 0.0000 | 0.1671 ± 0.0077 |
 
 Non-overlapping confidence intervals confirm the NN improvement is statistically reliable.
 
@@ -213,8 +214,12 @@ Non-overlapping confidence intervals confirm the NN improvement is statistically
 
 | Model | Predictions in [0.80,1.00] | Empirical Accuracy | Gap |
 |---|---|---|---|
-| SR | 272 / 368 (74%) | 1.000 | −0.063 |
+| SR | 273 / 368 (74%) | 1.000 | −0.064 |
 | NN | 325 / 368 (88%) | 0.991 | **−0.016** |
+
+### Additional Insights
+- **Capacity limits don't always matter:** Our experiment showed that on a simple dataset (Moons), using a complex model (h=32) gave us no increase in validation precision compared to h=2. The h=2 model was sufficient to warp the space as needed.
+- **Overconfident when wrong:** Although the Neural Network has higher absolute accuracy than SR, it can occasionally be more overconfident when giving wrong answers.
 
 ---
 

@@ -15,8 +15,8 @@ Model: SR
 
 Model: NN
   Train: Acc=0.991, CE=0.063
-  Val:   Acc=0.972, CE=0.102
-  Test:  Acc=0.954, CE=0.162
+  Val:   Acc=0.972, CE=0.103
+  Test:  Acc=0.951, CE=0.163
 [plot] Training curves saved → C:\Users\HUWAEI\OneDrive\Desktop\Math4AI Final Capstone Project\math4ai_capstone\starter_pack\src\..\figures\digits_training_dynamics.png
 
 Experiment 3 Complete: Dynamics saved to figures/digits_training_dynamics.png

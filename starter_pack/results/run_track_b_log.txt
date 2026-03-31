@@ -6,8 +6,8 @@ Running Track B — Confidence and Reliability Analysis
 
 Test set size : 368 samples
 
-Softmax Regression —  accuracy : 0.9375  |  mean confidence : 0.8446  |  mean entropy : 0.5305
-Neural Network     —  accuracy : 0.9511  |  mean confidence : 0.9338  |  mean entropy : 0.2197
+Softmax Regression —  accuracy : 0.9375  |  mean confidence : 0.8447  |  mean entropy : 0.5302
+Neural Network     —  accuracy : 0.9511  |  mean confidence : 0.9340  |  mean entropy : 0.2191
 
 ============================================================
 Calibration Table — Softmax Regression
@@ -15,10 +15,10 @@ Calibration Table — Softmax Regression
 Bin Range             N   Mean Conf   Emp. Acc      Gap
 ------------------------------------------------------------
 [0.00, 0.20)        0             —            —          —
-[0.20, 0.40)       14        0.3346       0.3571    -0.0225
+[0.20, 0.40)       14        0.3342       0.3571    -0.0230
 [0.40, 0.60)       39        0.5263       0.7436    -0.2173
-[0.60, 0.80)       43        0.7163       0.9070    -0.1907
-[0.80, 1.00)      272        0.9368       1.0000    -0.0632
+[0.60, 0.80)       42        0.7141       0.9048    -0.1907
+[0.80, 1.00)      273        0.9365       1.0000    -0.0635
 ============================================================
 
 ============================================================
@@ -27,10 +27,10 @@ Calibration Table — 1-Hidden-Layer NN
 Bin Range             N   Mean Conf   Emp. Acc      Gap
 ------------------------------------------------------------
 [0.00, 0.20)        0             —            —          —
-[0.20, 0.40)        2        0.3734       0.0000    +0.3734
-[0.40, 0.60)       15        0.5000       0.4000    +0.1000
-[0.60, 0.80)       27        0.7172       0.8519    -0.1346
-[0.80, 1.00)      324        0.9754       0.9907    -0.0153
+[0.20, 0.40)        2        0.3730       0.0000    +0.3730
+[0.40, 0.60)       16        0.5054       0.4375    +0.0679
+[0.60, 0.80)       25        0.7187       0.8400    -0.1213
+[0.80, 1.00)      325        0.9751       0.9908    -0.0157
 ============================================================
 [track_b] Reliability diagram saved → C:\Users\HUWAEI\OneDrive\Desktop\Math4AI Final Capstone Project\math4ai_capstone\starter_pack\scripts\..\figures/track_b_reliability_diagram.png
 [track_b] Confidence-by-correctness plot saved → C:\Users\HUWAEI\OneDrive\Desktop\Math4AI Final Capstone Project\math4ai_capstone\starter_pack\scripts\..\figures/track_b_confidence_distribution.png

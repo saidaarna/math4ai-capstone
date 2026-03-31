@@ -63,7 +63,9 @@ def run_experiments():
     hist_sr_m = train_softmax(sr_moons, SGD(lr=0.05), X_tr_m, y_tr_m, X_val_m, y_val_m)
 
     # 2. Neural Network — DEFAULT PARAMS (The "Failure Case")
-    # This shows why the digits protocol fails on the moons geometry
+    # This shows why the digits protocol fails on the moons geometry.
+    # Note: As per the assignment contract, the "failure case" must use the 
+    # exact default protocol (SGD, lr=0.05, 200 epochs) to be a fair comparison.
     nn_moons_def = OneHiddenLayerNN(d=2, hidden=32, k=2, lam=1e-4, seed=0)
     hist_nn_def = train_nn(nn_moons_def, SGD(lr=0.05), X_tr_m, y_tr_m, X_val_m, y_val_m, epochs=200)
 

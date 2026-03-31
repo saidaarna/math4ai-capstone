@@ -69,12 +69,16 @@ and evaluated using accuracy and unregularized cross-entropy on a held-out test 
 Our experiments show that the linear model is sufficient when the true decision boundary
 is affine (Gaussian task), while the hidden layer provides a meaningful representational
 advantage when the boundary is nonlinear (moons task).
-On the digits benchmark, the NN achieves test accuracy $0.9543 \pm 0.0028$ versus
-$0.9380 \pm 0.0015$ for SR over five random seeds, with non-overlapping confidence
+On the digits benchmark, the NN achieves test accuracy $0.9511 \pm 0.0000$ versus
+$0.9370 \pm 0.0028$ for SR over five random seeds, with non-overlapping confidence
 intervals confirming the difference is statistically reliable.
 Track~B reliability analysis further reveals that the NN is better calibrated, with a
 mean confidence-accuracy gap close to zero in the highest-confidence bin.
 \end{abstract}
+
+\newpage
+\tableofcontents
+\newpage
 
 % ============================================================
 \section{Introduction}
@@ -463,7 +467,7 @@ The best-validation-loss checkpoint is restored before test evaluation for both 
         \midrule
         Train      & 0.965 & 0.202 & 0.991 & 0.063 \\
         Validation & 0.946 & 0.214 & 0.972 & 0.103 \\
-        Test       & 0.938 & 0.268 & 0.951 & 0.162 \\
+        Test       & 0.938 & 0.268 & 0.951 & 0.163 \\
         \bottomrule
     \end{tabular}
 \end{table}
@@ -485,8 +489,8 @@ $+0.040$ for NN), indicating no serious overfitting within 200 epochs.
         \toprule
         \textbf{Model} & \textbf{Test Accuracy} & \textbf{Test CE} \\
         \midrule
-        Softmax Regression  & $0.9380 \pm 0.0015$ & $0.2683 \pm 0.0027$ \\
-        1-Hidden-Layer NN   & $0.9543 \pm 0.0028$ & $0.1499 \pm 0.0066$ \\
+        Softmax Regression  & $0.9375 \pm 0.0024$ & $0.2683 \pm 0.0027$ \\
+        1-Hidden-Layer NN   & $0.9511 \pm 0.0000$ & $0.1671 \pm 0.0077$ \\
         \bottomrule
     \end{tabular}
 \end{table}
@@ -500,40 +504,38 @@ The NN's larger CE variance ($\pm 0.0066$) reflects that, while the NN consisten
 achieves higher accuracy, its predicted probability distributions are more sensitive to
 initialization.
 
-\subsection{Capacity Ablation on Moons}
+\subsection{Failure-Case Analysis on Moons (Default Protocol)}
 
 \begin{figure}[h]
     \centering
-    \begin{subfigure}[b]{0.32\textwidth}
-        \includegraphics[width=\textwidth]{figures/ablation_h2.png}
-        \caption{$m = 2$}
-    \end{subfigure}
-    \begin{subfigure}[b]{0.32\textwidth}
-        \includegraphics[width=\textwidth]{figures/ablation_h8.png}
-        \caption{$m = 8$}
-    \end{subfigure}
-    \begin{subfigure}[b]{0.32\textwidth}
-        \includegraphics[width=\textwidth]{figures/ablation_h32.png}
-        \caption{$m = 32$}
-    \end{subfigure}
-    \caption{Capacity ablation on the Moons task (1000 epochs, $\eta=0.1$).
-    Hidden width $m=2$ produces a near-linear boundary;
-    $m=8$ shows mild curvature; $m=32$ successfully separates the crescents.}
+    \includegraphics[width=\textwidth]{figures/capacity_ablation_default_combined.png}
+    \caption{Capacity ablation under default parameters (200 epochs, $\eta=0.05$). All width variants, including the highly complex $m=32$, fail to correctly separate the crescents due to insufficient training budget.}
+    \label{fig:ablation_default}
+\end{figure}
+
+First, we analyze the Neural Network trained with default digits parameters (SGD, $\eta=0.05$, 200 epochs) on the Moons task (Figure~\ref{fig:ablation_default}), which demonstrates our primary failure case.
+\textbf{The model fails due to a strict optimization limit}, not due to structural under-capacity.
+
+\textbf{Evidence:} Even the $m=32$ architecture, which contains massive representational power, leaves its decision boundary near-linear and misclassifies the critical interleaved regions.
+
+\textbf{Mechanism:} The default optimizer settings ($\eta=0.05$) are simply too mathematically slow to descend from the initial plateau of the loss landscape within 200 epochs. The neural network gets stuck before it can significantly bend the decision boundary.
+
+\textbf{Lesson:} Highly complex models are entirely useless without the proper mathematical optimization to train them. Structural capacity alone is never enough.
+
+\subsection{Capacity Ablation on Moons (Optimized Protocol)}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=\textwidth]{figures/capacity_ablation_combined.png}
+    \caption{Capacity ablation on the Moons task (1000 epochs, $\eta=0.1$). Given proper optimization, all width variants learn to correctly separate the crescents to a nearly identical accuracy level.}
     \label{fig:ablation}
 \end{figure}
 
-Figure~\ref{fig:ablation} shows a clear progression of representational capability
-with increasing hidden width.
+When provided with a mathematically sufficient optimization budget (1000 epochs, $\eta=0.1$), the underlying architectures fully realize their representational potential (Figure~\ref{fig:ablation}). 
 
 \begin{itemize}[leftmargin=*]
-    \item \textbf{$m=2$:} only two hidden neurons, providing two independent
-          nonlinear features.
-          The learned boundary is near-linear even after 1000 epochs---the model
-          lacks the dimension to warp the input space sufficiently.
-    \item \textbf{$m=8$:} mild curvature appears; the boundary begins to follow
-          the data contours but still misclassifies part of the interleaved region.
-    \item \textbf{$m=32$:} the U-shaped non-convex boundary separates the two
-          crescents correctly, matching the full representational capacity analysis.
+    \item \textbf{$m=2$:} We observed that validation accuracy reaches $0.9875$, strictly identical to the much larger models. This demonstrates a critical insight: \textbf{a far more complex model is not always better}. The extremely lightweight $m=2$ model was already fully sufficient to successfully warp the space as needed.
+    \item \textbf{$m=8$ and $m=32$:} These larger models achieved the exact same $0.9875$ validation accuracy but simply introduced massive, redundant computational footprint. The visual boundaries become slightly more jagged, but the underlying classification performance sees no advantage whatsoever.
 \end{itemize}
 
 \subsection{Optimizer Study on Digits}
@@ -555,9 +557,9 @@ with increasing hidden width.
         \toprule
         \textbf{Optimizer} & \textbf{Test Accuracy} & \textbf{Test CE} \\
         \midrule
-        SGD ($\eta=0.05$) & 0.9538 & 0.1728 \\
-        Momentum ($\eta=0.05$, $\mu=0.9$) & 0.9511 & 0.1542 \\
-        Adam ($\eta=0.001$) & 0.9565 & 0.1492 \\
+        SGD ($\eta=0.05$) & 0.9511 & 0.1731 \\
+        Momentum ($\eta=0.05$, $\mu=0.9$) & 0.9565 & 0.1511 \\
+        Adam ($\eta=0.001$) & 0.9592 & 0.1503 \\
         \bottomrule
     \end{tabular}
 \end{table}
@@ -573,32 +575,10 @@ SGD from epoch 0 to approximately epoch 25.
 accumulated velocity allow them to traverse flat loss regions quickly.
 SGD with fixed learning rate $\eta=0.05$ is sensitive to the loss landscape curvature
 and converges more slowly, though it eventually reaches a competitive solution within
-the budget. Adam achieves the lowest cross-entropy ($0.1492$), indicating its
+the budget. Adam achieves the lowest cross-entropy ($0.1503$), indicating its
 probability distributions are the most accurately calibrated of the three.
 
-\subsection{Failure-Case Analysis}
 
-The $m=2$ experiment on Moons (Figure~\ref{fig:ablation}, left panel) is our primary
-failure case.
-\textbf{The model fails due to under-capacity}, not due to optimization failure.
-
-\textbf{Evidence:} even with 1000 epochs ($5\times$ the standard budget) and a higher
-learning rate ($\eta=0.1$), the $m=2$ boundary remains near-linear.
-Increasing training time further does not alter this outcome.
-The optimization is working---the model reaches a local minimum---but that minimum is
-bounded by what two hidden units can represent.
-
-\textbf{Mechanism:} with $m=2$, the hidden layer can only span a 2-dimensional
-nonlinear manifold in feature space.
-The moons task requires a non-convex partition of 2D input space, which demands at
-minimum several independent nonlinear directions.
-Two units cannot provide this regardless of their learned weights.
-
-\textbf{Lesson:} model complexity and training time are both necessary but neither
-is sufficient alone.
-Increasing the epoch budget cannot compensate for structural under-capacity.
-This contrasts with the optimizer study, where all three methods \emph{eventually}
-reach similar performance given the same architecture.
 
 
 % ============================================================
@@ -635,8 +615,8 @@ For $k=10$, the maximum entropy is $\log 10 \approx 2.30$.
         \toprule
         \textbf{Model} & \textbf{Accuracy} & \textbf{Mean Confidence} & \textbf{Mean Entropy} \\
         \midrule
-        Softmax Regression & 0.9375 & 0.8446 & 0.5306 \\
-        1-Hidden-Layer NN  & 0.9511 & 0.9335 & 0.2204 \\
+        Softmax Regression & 0.9375 & 0.8447 & 0.5302 \\
+        1-Hidden-Layer NN  & 0.9511 & 0.9340 & 0.2191 \\
         \bottomrule
     \end{tabular}
 \end{table}
@@ -655,16 +635,16 @@ $0.22$ vs. $0.53$).
         \textbf{Confidence Bin} & $n$ & \textbf{Mean Conf.} & \textbf{Emp. Acc.} & \textbf{Gap} \\
         \midrule
         \multicolumn{5}{l}{\textit{Softmax Regression}} \\
-        {[0.20, 0.40)} & 14  & 0.3343 & 0.2857 & $+0.049$ \\
-        {[0.40, 0.60)} & 39  & 0.5263 & 0.7692 & $-0.243$ \\
-        {[0.60, 0.80)} & 43  & 0.7159 & 0.9070 & $-0.191$ \\
-        {[0.80, 1.00]} & 272 & 0.9368 & 1.0000 & $-0.063$ \\
+        {[0.20, 0.40)} & 14  & 0.3342 & 0.3571 & $-0.023$ \\
+        {[0.40, 0.60)} & 39  & 0.5263 & 0.7436 & $-0.217$ \\
+        {[0.60, 0.80)} & 42  & 0.7141 & 0.9048 & $-0.191$ \\
+        {[0.80, 1.00]} & 273 & 0.9365 & 1.0000 & $-0.064$ \\
         \midrule
         \multicolumn{5}{l}{\textit{1-Hidden-Layer NN}} \\
-        {[0.20, 0.40)} &  1  & 0.3506 & 0.0000 & $+0.351$ \\
-        {[0.40, 0.60)} & 16  & 0.4894 & 0.3750 & $+0.114$ \\
-        {[0.60, 0.80)} & 26  & 0.7155 & 0.8462 & $-0.131$ \\
-        {[0.80, 1.00]} & 325 & 0.9746 & 0.9908 & $-0.016$ \\
+        {[0.20, 0.40)} &  2  & 0.3730 & 0.0000 & $+0.373$ \\
+        {[0.40, 0.60)} & 16  & 0.5054 & 0.4375 & $+0.068$ \\
+        {[0.60, 0.80)} & 25  & 0.7187 & 0.8400 & $-0.121$ \\
+        {[0.80, 1.00]} & 325 & 0.9751 & 0.9908 & $-0.016$ \\
         \bottomrule
     \end{tabular}
 \end{table}
@@ -704,7 +684,7 @@ $0.22$ vs. $0.53$).
 
 \textbf{SR is underconfident.}
 In the 0.40--0.80 bins (Table~\ref{tab:calibration}), SR's empirical accuracy
-far exceeds its stated confidence (negative gaps of $-0.243$ and $-0.191$).
+far exceeds its stated confidence (negative gaps of $-0.217$ and $-0.191$).
 This means: when SR says it is 50\% sure, it is actually correct 77\% of the time.
 SR is systematically \emph{more accurate than it thinks}.
 
@@ -723,9 +703,8 @@ more spread-out when wrong.
 
 \textbf{Connection to the main question:}
 the NN is not only more accurate on digits---it also produces more
-\emph{trustworthy} probability estimates.
-This matters in practical applications where the model's confidence score is used to
-make decisions (e.g., flagging low-confidence predictions for human review).
+\emph{trustworthy} probability estimates overall.
+However, a critical nuance remains: \textbf{although the Neural Network has higher absolute accuracy than SR, it can occasionally be more overconfident when giving wrong answers}. For instance, in the low-confidence bin $[0.20, 0.40)$, the NN made predictions with roughly 37\% confidence but was entirely incorrect (0\% empirical accuracy). This highlights that while neural networks are highly capable, their miscalibrations can be severe on edge cases.
 
 
 % ============================================================
@@ -739,8 +718,8 @@ When the true decision boundary is affine---as in the Gaussian task---softmax re
 is already an optimal classifier in the relevant function class, and the NN provides no
 meaningful improvement (both achieve $\sim 94$--$95\%$ accuracy with nearly identical
 boundaries).
-On digits, SR achieves $93.9\%$ accuracy, which is not trivial, but the NN's
-statistically significantly higher $95.4\%$ shows that some structure in digit
+SR achieves $93.9\%$ accuracy, which is not trivial, but the NN's
+statistically significantly higher $95.1\%$ shows that some structure in digit
 recognition genuinely requires nonlinear representation.
 
 \paragraph{2. What representational change does the hidden layer provide?}
@@ -755,24 +734,15 @@ This is most visible in the moons experiment: the input is 2D and non-separable;
 hidden representation is 32D and (approximately) linearly separable.
 
 \paragraph{3. When does additional model complexity fail to justify itself?}
-Under-capacity (Section~5.6): $m=2$ on moons fails not because of poor training, but
-because two hidden units cannot span the manifold needed to solve the task.
-Under-training: the NN with default parameters (200 epochs, $\eta=0.05$) on moons also
-fails---not due to architectural limits but because the optimization is not given enough
-budget and gradient signal to escape the near-linear initialization regime.
-Both are failure modes, but with different mechanisms.
+Our capacity ablation showed that on the given moons dataset, using a complex model ($m=32$) yielded no improvement in validation accuracy over $m=2$. The $m=2$ model was sufficient to warp the space as needed. When the dataset geometry can be resolved by a simpler transformation, additional complexity fails to justify itself.
 
 \paragraph{4. What does the failure case teach about capacity and optimization?}
-The $m=2$ failure teaches that \textbf{capacity is a hard constraint}.
-No amount of additional training or optimizer sophistication can overcome a structural
-representational limit.
-This distinguishes capacity failure from optimization failure (such as the slow
-convergence of SGD in early epochs), which more training epochs can eventually resolve.
+The failure of the Moons NN under the default digits protocol (200 epochs, $\eta=0.05$) teaches that \textbf{capacity is not a guarantee of success}. Even with $m=32$ hidden units, the model failed to learn a nonlinear boundary because the optimization process was cut short. This highlights that proper optimization and sufficient training budgets are just as critical as architectural complexity.
 
 \paragraph{5. What do repeated-seed statistics add beyond a single run?}
 A single run could be fortunate or unfortunate due to random initialization.
-Table~\ref{tab:seeds} shows that over five seeds, the NN achieves $0.9543 \pm 0.0028$
-versus SR's $0.9380 \pm 0.0015$.
+Table~\ref{tab:seeds} shows that over five seeds, the NN achieves $0.9511 \pm 0.0000$
+versus SR's $0.9375 \pm 0.0024$.
 The non-overlapping confidence intervals provide statistical evidence that the difference
 is genuine, not a chance outcome.
 Additionally, the variability estimates themselves are informative: SR's low variance

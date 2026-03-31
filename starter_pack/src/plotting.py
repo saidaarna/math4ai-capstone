@@ -188,7 +188,7 @@ def plot_training_curves(histories, labels, savepath, title="Training Dynamics")
 # 3. Capacity ablation: decision boundaries for multiple hidden widths
 # ---------------------------------------------------------------------------
 
-def plot_capacity_ablation(models, widths, X, y, savepath):
+def plot_capacity_ablation(models, widths, X, y, savepath, suptitle="Capacity Ablation: Hidden Width on Moons Task"):
     """
     Shows the effect of hidden-layer width on the learned decision boundary.
 
@@ -207,7 +207,7 @@ def plot_capacity_ablation(models, widths, X, y, savepath):
 
     n_models = len(models)
     fig, axes = plt.subplots(1, n_models, figsize=(5 * n_models, 4.5))
-    fig.suptitle("Capacity Ablation: Hidden Width on Moons Task",
+    fig.suptitle(suptitle,
                  fontsize=13, fontweight="bold")
 
     # Grid setup — same for every subplot so comparisons are fair
