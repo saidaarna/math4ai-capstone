@@ -70,7 +70,7 @@ Our experiments show that the linear model is sufficient when the true decision 
 is affine (Gaussian task), while the hidden layer provides a meaningful representational
 advantage when the boundary is nonlinear (moons task).
 On the digits benchmark, the NN achieves test accuracy $0.9511 \pm 0.0000$ versus
-$0.9370 \pm 0.0028$ for SR over five random seeds, with non-overlapping confidence
+$0.9375 \pm 0.0024$ for SR over five random seeds, with non-overlapping confidence
 intervals confirming the difference is statistically reliable.
 Track~B reliability analysis further reveals that the NN is better calibrated, with a
 mean confidence-accuracy gap close to zero in the highest-confidence bin.
@@ -354,9 +354,9 @@ Before running any experiment we verified four concrete checks using
 \midrule
 1 & Predicted class probabilities sum to 1 & $\sum_j p_j = 1$ & \checkmark\ Passed \\
 2 & Loss decreases on 5-example subset & $\loss_\text{final} < \loss_\text{init}$ &
-    $1.782 \to 0.005$ \\
+    $2.653 \to 0.005$ \\
 3 & Gradient check (analytical vs.\ numerical) & rel.\ error $< 10^{-4}$ &
-    $\mathbf{1.11 \times 10^{-10}}$ \\
+    $\mathbf{3.43 \times 10^{-10}}$ \\
 4 & No NaN or Inf values in any forward pass & loss is finite & \checkmark\ Passed \\
 \bottomrule
 \end{tabular}
@@ -365,7 +365,7 @@ Before running any experiment we verified four concrete checks using
 Check~3 uses a finite-difference approximation
 $\tilde{g}_i = [\loss(\theta_i + \varepsilon) - \loss(\theta_i - \varepsilon)] / 2\varepsilon$
 with $\varepsilon = 10^{-5}$, computed on randomly selected parameter entries.
-The relative error $1.11 \times 10^{-10}$ is four orders of magnitude below the
+The relative error $3.43 \times 10^{-10}$ is four orders of magnitude below the
 acceptance threshold, confirming that the chain-rule derivation in Section~2.6 is
 implemented correctly.
 
@@ -498,10 +498,10 @@ $+0.040$ for NN), indicating no serious overfitting within 200 epochs.
 The confidence intervals do not overlap for accuracy, confirming that the NN's
 advantage is statistically reliable and not attributable to a favorable random
 initialization.
-The SR's narrower CI ($\pm 0.0015$ vs $\pm 0.0028$) reflects lower variance across
-seeds: SR is a simpler, more stable model, but with a lower performance ceiling.
-The NN's larger CE variance ($\pm 0.0066$) reflects that, while the NN consistently
-achieves higher accuracy, its predicted probability distributions are more sensitive to
+The NN's remarkably narrow CI for accuracy ($\pm 0.0000$ vs $\pm 0.0024$ for SR)
+shows it consistently finds a high-performing solution across seeds.
+However, the NN's larger CE variance ($\pm 0.0077$ vs $\pm 0.0027$) reflects that,
+while it consistently achieves higher accuracy, its predicted probability distributions are more sensitive to
 initialization.
 
 \subsection{Failure-Case Analysis on Moons (Default Protocol)}
@@ -516,7 +516,7 @@ initialization.
 First, we analyze the Neural Network trained with default digits parameters (SGD, $\eta=0.05$, 200 epochs) on the Moons task (Figure~\ref{fig:ablation_default}), which demonstrates our primary failure case.
 \textbf{The model fails due to a strict optimization limit}, not due to structural under-capacity.
 
-\textbf{Evidence:} Even the $m=32$ architecture, which contains massive representational power, leaves its decision boundary near-linear and misclassifies the critical interleaved regions.
+\textbf{Evidence:} Even the $m=32$ architecture, which contains massive representational power, leaves its decision boundary near-linear and misclassifies the critical interleaved regions. Quantitatively, the validation accuracy completely stalls at exactly $0.8875$ across all three hidden widths ($m=2, 8$, and $32$).
 
 \textbf{Mechanism:} The default optimizer settings ($\eta=0.05$) are simply too mathematically slow to descend from the initial plateau of the loss landscape within 200 epochs. The neural network gets stuck before it can significantly bend the decision boundary.
 
@@ -857,6 +857,7 @@ ETH Zurich Learning and Adaptive Systems Group.
 \end{figure}
 
 % ============================================================
+\clearpage
 \section{Contribution Statement}
 % ============================================================
 

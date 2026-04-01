@@ -218,7 +218,8 @@ Non-overlapping confidence intervals confirm the NN improvement is statistically
 | NN | 325 / 368 (88%) | 0.991 | **−0.016** |
 
 ### Additional Insights
-- **Capacity limits don't always matter:** Our experiment showed that on a simple dataset (Moons), using a complex model (h=32) gave us no increase in validation precision compared to h=2. The h=2 model was sufficient to warp the space as needed.
+- **Capacity limits don't always matter:** Our experiment showed that on a simple dataset (Moons) with optimized training, using a complex model (h=32) gave us no increase in validation precision (0.9875) compared to h=2. The h=2 model was sufficient to warp the space as needed.
+- **Optimization limits are critical:** When training with default optimizer settings ($\eta=0.05$, 200 epochs) on the Moons task, the validation accuracy completely stalled at exactly 0.8875 across all hidden widths (m=2, 8, and 32), leaving the decision boundary near-linear despite massive capacity.
 - **Overconfident when wrong:** Although the Neural Network has higher absolute accuracy than SR, it can occasionally be more overconfident when giving wrong answers.
 
 ---

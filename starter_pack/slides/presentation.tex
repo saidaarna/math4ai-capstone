@@ -88,8 +88,8 @@
     \begin{columns}
         \begin{column}{0.5\textwidth}
             \centering
-            \includegraphics[height=0.6\textheight]{figures/moons_nn_default.png}\\
-            \small Neural Network (Default)
+            \includegraphics[height=0.6\textheight]{figures/moons_sr.png}\\
+            \small Softmax Regression
         \end{column}
         \begin{column}{0.5\textwidth}
             \centering
@@ -99,7 +99,7 @@
     \end{columns}
     
     \vspace{0.5em}
-    \textbf{Conclusion:} While the NN is structurally capable of solving nonlinearly separable problems, proper optimization (learning rate, epochs, and regularization) is essential to find the correct decision boundary.
+    \textbf{Conclusion:} SR is \textbf{fundamentally limited} by its representation class --- no choice of weights produces a linear boundary that correctly solves the moons task. The NN learns a curved separator by mapping the 2D input into a higher-dimensional space where the crescents become linearly separable.
 \end{frame}
 
 % Slide 6: Results on Digits Benchmark
@@ -164,6 +164,7 @@
     \vspace{-0.5em}
     \begin{itemize}
         \item The boundary remains near-linear across \textit{all} widths, even with excessive capacity ($m=32$).
+        \item \textbf{Validation stall:} Accuracy is stuck at exactly $0.8875$ for all tested widths ($m=2, 8, 32$).
         \item \textbf{Why?} The default settings are too slow to escape the initial plateau within the strict 200-epoch budget.
         \item \textbf{Lesson:} Highly complex models are useless without the proper mathematical optimization to train them.
     \end{itemize}
@@ -217,7 +218,7 @@
     \begin{itemize}
         \item \textbf{When is linear sufficient?} When the data geometry dictates an affine separator (e.g., Gaussian task).
         \item \textbf{What does the hidden layer add?} It warps the input space, allowing a linear output layer to solve nonlinearly separable problems (e.g., Moons, Digits).
-        \item \textbf{Is complexity always justified?} No. If structural capacity is too low (our failure case), or the task geometry is too simple, the extra complexity adds nothing.
+        \item \textbf{Is complexity always justified?} No. If the mathematical optimization is inadequate (our failure case), or the task geometry is too simple, the extra complexity adds nothing.
         \item \textbf{Overall:} The One-Hidden-Layer NN outperformed Softmax Regression significantly on the digits benchmark in both raw accuracy and calibrated reliability.
     \end{itemize}
     
