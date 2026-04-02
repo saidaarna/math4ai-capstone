@@ -10,6 +10,9 @@ This starter pack is intentionally minimal. Its job is to remove setup noise, no
 - `data/linear_gaussian.npz` for the linear synthetic task
 - `data/moons.npz` for the nonlinear synthetic task
 - `scripts/generate_synthetic.py`, which regenerates the two synthetic datasets
+- `scripts/inspect_data.ipynb`, a data-inspection notebook that verifies dataset shapes,
+  class distributions, and feature statistics, and saves exploration figures to
+  `figures/data_inspect_figures/`
 - a minimal repository skeleton
 - `starter_pack/README.md` and `starter_pack/CHECKLIST.md`
 - an optional LaTeX report template at `report/template.tex`
@@ -38,9 +41,12 @@ Replace this section with your team members and high-level responsibilities.
 ## Suggested Repository Layout
 
 - `data/`: provided data, split indices, and any team-generated derived arrays
-- `scripts/`: deterministic starter-pack utilities
+- `scripts/`: deterministic starter-pack utilities and inspection notebooks
 - `src/`: model, training, and evaluation code written by the team
 - `figures/`: plots for the report and slides
+  - `figures/data_inspect_figures/`: exploration figures produced by `scripts/inspect_data.ipynb`
+    (Gaussian scatter + histograms, Moons scatter + linear-boundary demo,
+    digit samples, per-class mean images, PCA, correlation heatmap)
 - `results/`: saved experiment outputs and summary tables
 - `report/`: final PDF report and source files
 - `slides/`: presentation materials

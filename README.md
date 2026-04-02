@@ -100,7 +100,7 @@ math4ai_capstone/
     │   └── track_b.py                    # Track B: confidence and reliability analysis
     │
     ├── scripts/                          # Entry-point runners (execute these)
-    |   ├── inspect_data.ipynb            # Inspect the data
+    |   ├── inspect_data.ipynb            # Data inspection notebook → saves to figures/data_inspect_figures/
     │   ├── run_experiments.py            # Gaussian, Moons, Digits experiments
     │   ├── run_ablations.py              # Capacity ablation + optimizer study + 5-seed stats
     │   ├── run_sanity_checks.py          # Implementation verification checks
@@ -109,6 +109,7 @@ math4ai_capstone/
     │   └── generate_synthetic.py         # Synthetic dataset generation
     │
     ├── figures/                          # All generated plots (PNG)
+    │   └── data_inspect_figures/         # Dataset exploration plots from 
     ├── results/                          # Numerical logs saved automatically on each run
     ├── report/
     │   ├── main.tex                      # Complete LaTeX report (Overleaf-ready)
@@ -123,6 +124,10 @@ math4ai_capstone/
 Run all scripts from the **repository root** with the virtual environment active.
 
 ```powershell
+# Step 0 — Inspect datasets and generate exploration figures
+jupyter nbconvert --to notebook --execute starter_pack/scripts/inspect_data.ipynb
+# (or open in VS Code / Jupyter and run all cells)
+
 # Step 1 — Verify implementation correctness
 python starter_pack/scripts/run_sanity_checks.py
 
