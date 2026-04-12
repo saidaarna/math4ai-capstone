@@ -238,3 +238,16 @@ Non-overlapping confidence intervals confirm the NN improvement is statistically
 - Stanford CS229 Deep Learning Notes — https://cs229.stanford.edu/
 - Stanford CS231n Backpropagation Notes — https://cs231n.github.io/optimization-2/
 
+## 10. Contributors
+
+This project was developed as a collaborative effort for the **Math4AI Capstone**.
+
+| Contributor | Role & Core Ownership | GitHub |
+|:---|:---|:---|
+| **Nigar Rustamova** | AI Engineer: Data Loading, Softmax Implementation, Experiments | [@nigarrustamova](https://github.com/nigarrustamova) |
+| **Saida Arabova** | AI Engineer: NN Implementation, Training Loops, Data Inspection | [@saidaarna](https://github.com/saidaarna) |
+| **Nazrin Aliyeva** | Data Scientist: Track B Reliability, Plotting, Reporting | [@nazrin-aliyeva](#) |
+| **Laman Mirzayeva** | Data Scientist: Optimization Studies, Ablations & Statistics | [@laman-mirzayeva](#) |
+
+*Project mentored by the National AI Center & AI Academy.*
+
