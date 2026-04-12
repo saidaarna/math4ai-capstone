@@ -1,0 +1,22 @@
+[plot] Decision boundary saved → C:\Users\HUWAEI\OneDrive\Desktop\Math4AI Final Capstone Project\math4ai_capstone\starter_pack\src\..\figures\gaussian_sr.png
+[plot] Decision boundary saved → C:\Users\HUWAEI\OneDrive\Desktop\Math4AI Final Capstone Project\math4ai_capstone\starter_pack\src\..\figures\gaussian_nn.png
+[plot] Training curves saved → C:\Users\HUWAEI\OneDrive\Desktop\Math4AI Final Capstone Project\math4ai_capstone\starter_pack\src\..\figures\gaussian_dynamics.png
+Experiment 1 Complete: Expecting SR ≈ NN performance.
+[plot] Decision boundary saved → C:\Users\HUWAEI\OneDrive\Desktop\Math4AI Final Capstone Project\math4ai_capstone\starter_pack\src\..\figures\moons_sr.png
+[plot] Decision boundary saved → C:\Users\HUWAEI\OneDrive\Desktop\Math4AI Final Capstone Project\math4ai_capstone\starter_pack\src\..\figures\moons_nn_default.png
+[plot] Decision boundary saved → C:\Users\HUWAEI\OneDrive\Desktop\Math4AI Final Capstone Project\math4ai_capstone\starter_pack\src\..\figures\moons_nn_optimized.png
+[plot] Training curves saved → C:\Users\HUWAEI\OneDrive\Desktop\Math4AI Final Capstone Project\math4ai_capstone\starter_pack\src\..\figures\moons_comparison_dynamics.png
+Experiment 2 Complete: Expecting NN >> SR performance.
+
+Model: SR
+  Train: Acc=0.965, CE=0.202
+  Val:   Acc=0.946, CE=0.214
+  Test:  Acc=0.938, CE=0.268
+
+Model: NN
+  Train: Acc=0.991, CE=0.063
+  Val:   Acc=0.972, CE=0.103
+  Test:  Acc=0.951, CE=0.163
+[plot] Training curves saved → C:\Users\HUWAEI\OneDrive\Desktop\Math4AI Final Capstone Project\math4ai_capstone\starter_pack\src\..\figures\digits_training_dynamics.png
+
+Experiment 3 Complete: Dynamics saved to figures/digits_training_dynamics.png

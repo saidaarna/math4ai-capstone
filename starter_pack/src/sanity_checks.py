@@ -4,7 +4,7 @@ from neural_network import OneHiddenLayerNN
 
 def run_sanity_checks():
     #  Check 1: Probability sum
-    sr = SoftmaxRegression(d=64, k=10, seed=0)
+    sr = SoftmaxRegression(d=64, k=10, lam=1e-4, seed=0)
     X_tiny = np.random.randn(10, 64)
     P = sr.forward(X_tiny)
     assert np.allclose(P.sum(axis=1), 1.0), "Probabilities don't sum to 1!"
@@ -13,7 +13,7 @@ def run_sanity_checks():
     #  Check 2: Loss decreases on tiny subset
     from optimizers import SGD
     X5, y5 = X_tiny[:5], np.array([0,1,2,3,4])
-    sr2 = SoftmaxRegression(d=64, k=10, seed=0)
+    sr2 = SoftmaxRegression(d=64, k=10, lam=1e-4, seed=0)
     opt = SGD(lr=0.1)
     loss_before = sr2.loss(X5, y5)
     for _ in range(200):
@@ -24,7 +24,7 @@ def run_sanity_checks():
     print(f" Check 2: Loss decreased {loss_before:.3f} → {loss_after:.4f}")
     
     #  Check 3: Gradient numerical check (finite differences)
-    sr3 = SoftmaxRegression(d=4, k=3, seed=0)
+    sr3 = SoftmaxRegression(d=4, k=3, lam=1e-4, seed=0)
     X3, y3 = np.random.randn(8, 4), np.array([0,1,2,0,1,2,0,1])
     dW_analytic, _ = sr3.gradients(X3, y3)
     i, j = 0, 0 # check one entry

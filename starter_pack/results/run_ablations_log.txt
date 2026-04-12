@@ -1,0 +1,43 @@
+>>> Starting Task 7.3: Ablation Studies...
+Experiment: Hidden Units = 2
+h=2: train_acc=0.9708, val_acc=0.9875
+Experiment: Hidden Units = 8
+h=8: train_acc=0.9833, val_acc=0.9875
+Experiment: Hidden Units = 32
+h=32: train_acc=0.9833, val_acc=0.9875
+[plot] Capacity ablation saved → C:\Users\HUWAEI\OneDrive\Desktop\Math4AI Final Capstone Project\math4ai_capstone\starter_pack\src\..\figures\capacity_ablation_combined.png
+
+Experiment: Hidden Units with DEFAULT parameters
+Experiment Default: Hidden Units = 2
+h=2 (default): train_acc=0.8792, val_acc=0.8875
+Experiment Default: Hidden Units = 8
+h=8 (default): train_acc=0.8667, val_acc=0.8875
+Experiment Default: Hidden Units = 32
+h=32 (default): train_acc=0.8667, val_acc=0.8875
+[plot] Capacity ablation saved → C:\Users\HUWAEI\OneDrive\Desktop\Math4AI Final Capstone Project\math4ai_capstone\starter_pack\src\..\figures\capacity_ablation_default_combined.png
+
+Experiment: Comparing Optimizers on Digits
+Training model with SGD...
+-> SGD Test Accuracy: 0.9511 | Cross-Entropy: 0.1731
+Training model with Momentum...
+-> Momentum Test Accuracy: 0.9565 | Cross-Entropy: 0.1511
+Training model with Adam...
+-> Adam Test Accuracy: 0.9592 | Cross-Entropy: 0.1503
+[plot] Optimizer study saved → C:\Users\HUWAEI\OneDrive\Desktop\Math4AI Final Capstone Project\math4ai_capstone\starter_pack\src\..\figures\optimizer_comparison.png
+
+>>> Starting Task 7.4: Statistical Analysis (5 Seeds)...
+Running experiment with Seed 0...
+Running experiment with Seed 1...
+Running experiment with Seed 2...
+Running experiment with Seed 3...
+Running experiment with Seed 4...
+
+--- Final Statistical Results (Digits Dataset) ---
+
+Model: Softmax Regression
+Accuracy:      0.9375 ± 0.0024
+Cross-Entropy: 0.2683 ± 0.0027
+
+Model: 1-Hidden-Layer NN
+Accuracy:      0.9511 ± 0.0000
+Cross-Entropy: 0.1671 ± 0.0077

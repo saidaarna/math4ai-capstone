@@ -16,6 +16,8 @@ The foundation of the project relies on deterministic data generation to ensure 
     * **Objective**: Prepares the UCI Optical Recognition of Handwritten Digits dataset.
     * **Normalization**: Implements feature scaling to the $[0, 1]$ range. This is critical for preventing gradient vanishing in the `tanh` activation layers.
     * **Stratification**: Employs stratified sampling to maintain class proportions across Train/Val/Test splits, mitigating label shift issues.
+* **`inspect_data.ipynb`**:
+    * **Exploratory Data Analysis**: A Jupyter notebook used to inspect the shapes, class distributions, and value ranges of all data files before model implementation. Ensuring data integrity at the start of the project.
 
 ### B. Validation & Testing
 * **`run_sanity_checks.py`**:
@@ -30,6 +32,10 @@ The foundation of the project relies on deterministic data generation to ensure 
 * **`run_ablations.py`**:
     * **Optimization Analysis**: Compares different optimizers (e.g., SGD vs. Adam) and architectural capacities (hidden unit counts).
     * **Statistical Rigor**: Runs the models across **5 different random seeds** to compute mean performance and standard deviation.
+
+* **`run_track_b.py`**:
+    * **Objective**: Performs prediction confidence and reliability analysis.
+    * **Advanced Track**: Implements 5-bin calibration tables and reliability diagrams to evaluate if the model "knows what it knows."
 
 ---
 
@@ -75,4 +81,9 @@ Since this project utilizes a local virtual environment in PyCharm, use the foll
 ### Step 4: Run Statistical Ablation Studies
 ```powershell
 ..\..\.venv\Scripts\python.exe run_ablations.py
+```
+
+### Step 5: Run Advanced Track B Analysis
+```powershell
+..\..\.venv\Scripts\python.exe run_track_b.py
 ```

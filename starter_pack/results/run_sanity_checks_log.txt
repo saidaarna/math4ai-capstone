@@ -1,0 +1,4 @@
+ Check 1: Probabilities sum to 1.
+ Check 2: Loss decreased 2.653 → 0.0050
+ Check 3: Gradient check passed (rel_err=3.43e-10)
+ Check 4: No NaN/Inf in loss.

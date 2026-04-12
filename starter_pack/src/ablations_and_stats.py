@@ -7,7 +7,7 @@ from softmax_regression import SoftmaxRegression
 from optimizers import SGD, Momentum, Adam
 from train import train_nn, train_softmax
 from evaluate import evaluate
-from plotting import plot_decision_boundary, plot_training_curves
+from plotting import plot_decision_boundary, plot_training_curves, plot_capacity_ablation, plot_optimizer_study
 
 def _fig_path(filename):
     base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -26,15 +26,42 @@ def run_ablation_studies():
     # Using relative paths to navigate from src/ to data/
     X_tr, y_tr, X_val, y_val, X_te, y_te = load_synthetic("../data/moons.npz")
 
-    for h in [2, 8, 32]:
+    models_list = []
+    widths = [2, 8, 32]
+    for h in widths:
         print(f"Experiment: Hidden Units = {h}")
         model = OneHiddenLayerNN(d=2, hidden=h, k=2, lam=1e-4, seed=42)
         # Use 1000 epochs + lr=0.1 (same as main moons experiment) so each network
         # has enough budget to express its maximum representational capacity.
         # With fewer epochs all networks look linear because tanh hasn't had time to curve.
         train_nn(model, SGD(lr=0.1), X_tr, y_tr, X_val, y_val, epochs=1000)
-        # Visualizing the decision boundaries for different capacities
-        plot_decision_boundary(model, X_te, y_te, f"Capacity h={h}", _fig_path(f"ablation_h{h}.png"))
+        
+        # Track training and validation accuracies to check capacity differences
+        train_acc = model.accuracy(X_tr, y_tr)
+        val_acc = model.accuracy(X_val, y_val)
+        print(f"h={h}: train_acc={train_acc:.4f}, val_acc={val_acc:.4f}")
+        models_list.append(model)
+        
+    # Visualizing the decision boundaries for different capacities side-by-side
+    plot_capacity_ablation(models_list, widths, X_te, y_te, _fig_path("capacity_ablation_combined.png"))
+
+    print("\nExperiment: Hidden Units with DEFAULT parameters")
+    models_list_def = []
+    for h in widths:
+        print(f"Experiment Default: Hidden Units = {h}")
+        model = OneHiddenLayerNN(d=2, hidden=h, k=2, lam=1e-4, seed=42)
+        train_nn(model, SGD(lr=0.05), X_tr, y_tr, X_val, y_val, epochs=200)
+        
+        train_acc = model.accuracy(X_tr, y_tr)
+        val_acc = model.accuracy(X_val, y_val)
+        print(f"h={h} (default): train_acc={train_acc:.4f}, val_acc={val_acc:.4f}")
+        models_list_def.append(model)
+        
+    plot_capacity_ablation(
+        models_list_def, widths, X_te, y_te, 
+        _fig_path("capacity_ablation_default_combined.png"),
+        suptitle="Capacity Ablation (Default Params): Hidden Width on Moons"
+    )
 
     # Part B: Optimizer Comparison on Digits Dataset
     print("\nExperiment: Comparing Optimizers on Digits")
@@ -64,8 +91,8 @@ def run_ablation_studies():
         acc, ce = evaluate(model, X_te, y_te)
         print(f"-> {name} Test Accuracy: {acc:.4f} | Cross-Entropy: {ce:.4f}")
 
-    # Save the training curves for all optimizers in one plot
-    plot_training_curves(histories, names, _fig_path("optimizer_comparison.png"))
+    # Save the training curves for all optimizers in one plot using the dedicated function
+    plot_optimizer_study(histories, names, _fig_path("optimizer_comparison.png"))
 
 
 # =========================================================
@@ -98,9 +125,9 @@ def run_statistical_analysis():
         sr_accs.append(acc)
         sr_ces.append(ce)
         
-        # Neural Network Benchmark Configuration (Adam was historically fastest here)
+        # Neural Network Benchmark Configuration (SGD is default per protocol)
         nn_model = OneHiddenLayerNN(d=64, hidden=32, k=10, lam=1e-4, seed=s)
-        train_nn(nn_model, Adam(lr=0.001), X_tr, y_tr, X_val, y_val)
+        train_nn(nn_model, SGD(lr=0.05), X_tr, y_tr, X_val, y_val)
         acc, ce = evaluate(nn_model, X_te, y_te)
         nn_accs.append(acc)
         nn_ces.append(ce)
